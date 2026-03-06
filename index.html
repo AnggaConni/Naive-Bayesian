@@ -589,12 +589,12 @@ input:checked + .slider:after {
         </div>
       </div>
 
-      <div class="tab-content" id="tab-stats">
-        <div style="font-size:.82rem;color:var(--muted);margin-bottom:12px">Sequential update trend based on evidence order.</div>
-        <div style="background:#fff; border:1px solid var(--border); border-radius:12px; padding:16px;">
-          <canvas id="statsChart" width="400" height="150"></canvas>
-        </div>
-      </div>
+<div class="tab-content" id="tab-stats">
+  <div style="font-size:.82rem;color:var(--muted);margin-bottom:12px">Sequential update trend based on evidence order.</div>
+  <div style="background:#fff; border:1px solid var(--border); border-radius:12px; padding:16px; min-height: 300px;">
+    <canvas id="statsChart" width="400" height="280"></canvas>
+  </div>
+</div>
 
       <div class="tab-content" id="tab-sensitivity">
         <div class="row" style="justify-content:space-between; margin-bottom:12px;">
@@ -2012,7 +2012,7 @@ cy.layout({
   }).run();
 }
 
-// ─── CHART STATISTIKA ─────────────────────────────────────────────────────────
+// ─── CHART STATISTIKA V3 (INTELLIGENCE UPGRADE) ───────────────────────────────
 let statsChartInstance = null;
 
 function updateStatsChart() {
@@ -2021,15 +2021,30 @@ function updateStatsChart() {
 
   const labels = ['Prior (Awal)'];
   const dataPoints = [hypothesis.prior * 100];
+  const pointColors = ['#1A6CF6']; // Warna biru awal untuk Prior
+  const tooltipsData = ['Kondisi awal sebelum bukti masuk'];
+
   let currentOdds = hypothesis.prior / (1 - hypothesis.prior);
 
-  // Hitung posterior secara bertahap setiap bukti masuk
-  baseEvidence.forEach((e, index) => {
-    labels.push(`Evidence ${index + 1}`);
+  // Hitung posterior bertahap & kumpulkan data untuk grafik
+  baseEvidence.forEach((e) => {
+    // 1. Label sumbu X: Gunakan judul (potong jika terlalu panjang)
+    const shortTitle = e.title.length > 18 ? e.title.substring(0, 18) + '...' : e.title;
+    labels.push(shortTitle);
+    
+    // 2. Kalkulasi Probabilitas berjalan
     const effLR = effectiveLR(e);
     currentOdds *= effLR;
     let post = currentOdds / (1 + currentOdds);
     dataPoints.push(post * 100);
+
+    // 3. Semantic Coloring: Hijau (Support), Merah (Against), Kuning (Neutral)
+    if (effLR > 1.05) pointColors.push('#0D9E6E'); 
+    else if (effLR < 0.95) pointColors.push('#E8445A');
+    else pointColors.push('#F5A623');
+
+    // 4. Siapkan data untuk Tooltip (muncul saat di-hover)
+    tooltipsData.push(`Eff. LR: ${effLR.toFixed(3)} | Conf: ${e.confidence.toFixed(2)}`);
   });
 
   if (statsChartInstance) statsChartInstance.destroy();
@@ -2038,24 +2053,79 @@ function updateStatsChart() {
     type: 'line',
     data: {
       labels: labels,
-      datasets: [{
-        label: 'Probability Posterior (%)',
-        data: dataPoints,
-        borderColor: '#1A6CF6',
-        backgroundColor: 'rgba(26,108,246,0.1)',
-        borderWidth: 3,
-        pointBackgroundColor: '#0AB7A0',
-        pointRadius: 5,
-        fill: true,
-        tension: 0.4 // Membuat kurva melengkung mulus
-      }]
+      datasets: [
+        {
+          label: currentLang === 'id' ? 'Probabilitas Keyakinan (%)' : 'Posterior Probability (%)',
+          data: dataPoints,
+          borderColor: '#1A6CF6', // Garis utama biru
+          backgroundColor: 'rgba(26,108,246,0.08)', // Area bawah garis (tipis)
+          borderWidth: 3,
+          pointBackgroundColor: pointColors, // Warna titik dinamis
+          pointBorderColor: '#ffffff',
+          pointBorderWidth: 2,
+          pointRadius: 6,
+          pointHoverRadius: 8,
+          fill: true,
+          tension: 0.4 // Membuat kurva melengkung mulus
+        },
+        {
+          // GARIS THRESHOLD
+          label: currentLang === 'id' ? 'Ambang Batas (Threshold)' : 'Decision Threshold',
+          data: Array(labels.length).fill(threshold * 100), // Garis lurus konstan
+          borderColor: 'rgba(232, 68, 90, 0.6)', // Merah transparan (Rose)
+          borderWidth: 2,
+          borderDash: [6, 6], // Garis putus-putus
+          pointRadius: 0, // Sembunyikan titik
+          fill: false,
+          tension: 0
+        }
+      ]
     },
     options: {
       responsive: true,
-      scales: {
-        y: { min: 0, max: 100, title: { display: true, text: 'Probability (%)' } }
+      maintainAspectRatio: false, // Memastikan bisa resize dengan kontainer HTML
+      interaction: {
+        mode: 'index',
+        intersect: false,
       },
-      plugins: { legend: { display: false } }
+      scales: {
+        y: { 
+          min: 0, 
+          max: 100, 
+          title: { display: true, text: 'Probability (%)', font: { family: 'Sora', weight: 600 } },
+          grid: { color: 'rgba(11, 37, 69, 0.05)' } // Garis grid transparan
+        },
+        x: {
+          grid: { display: false }, // Hilangkan grid vertikal agar bersih
+          ticks: { font: { family: 'Sora', size: 10 }, maxRotation: 45, minRotation: 0 }
+        }
+      },
+      plugins: { 
+        legend: { 
+          display: true, 
+          position: 'top',
+          labels: { usePointStyle: true, boxWidth: 8, font: { family: 'Sora' } }
+        },
+        tooltip: {
+          backgroundColor: '#0B2545', // Navy background
+          titleFont: { family: 'Sora', size: 13 },
+          bodyFont: { family: 'IBM Plex Mono', size: 12 },
+          padding: 12,
+          callbacks: {
+            label: function(context) {
+              let label = context.dataset.label || '';
+              if (label) label += ': ';
+              if (context.parsed.y !== null) label += context.parsed.y.toFixed(2) + '%';
+              return label;
+            },
+            afterLabel: function(context) {
+              // Jangan tampilkan detail LR untuk garis threshold (datasetIndex 1)
+              if (context.datasetIndex === 1) return null; 
+              return tooltipsData[context.dataIndex];
+            }
+          }
+        }
+      }
     }
   });
 }
@@ -2148,7 +2218,7 @@ function exportPDF() {
   const ql = qualitativeLabel(basePost);
   
   // Capture Visual Elements
-  const graphImg = cy ? cy.png({ full: true, bg: '#f8fbff', scale: 1.5 }) : null;
+  const graphImg = cy ? cy.png({ full: true, bg: '#fcfdfe', scale: 1.5 }) : null;
   const chartImg = statsChartInstance ? statsChartInstance.toBase64Image() : null;
 
   const reportDate = new Date().toLocaleString(currentLang === 'id' ? 'id-ID' : 'en-GB');
@@ -2180,9 +2250,9 @@ function exportPDF() {
         
         .hypothesis-strip { background: var(--navy); color: white; padding: 20px; border-radius: 10px; margin-bottom: 20px; }
         
-        /* Shrunk Graph Styles */
-        .graph-container { text-align: center; border: 1px solid var(--border); border-radius: 10px; padding: 10px; background: #fcfdfe; margin-bottom: 20px; }
-        .graph-container img { max-height: 280px; width: auto; max-width: 100%; }
+        /* Shrunk Graph & Chart Styles to fit Page 1 */
+        .visual-container { text-align: center; border: 1px solid var(--border); border-radius: 10px; padding: 10px; background: #fcfdfe; margin-bottom: 20px; }
+        .visual-container img { max-height: 210px; width: auto; max-width: 100%; object-fit: contain; }
         
         table { width: 100%; border-collapse: collapse; margin-top: 10px; table-layout: fixed; }
         th { text-align: left; padding: 8px; background: #f0f4f8; font-size: 10px; text-transform: uppercase; border-bottom: 2px solid var(--navy); }
@@ -2225,11 +2295,18 @@ function exportPDF() {
         </div>
 
         <div class="label" style="margin-bottom:8px;">Visual Evidence Topology</div>
-        <div class="graph-container">
+        <div class="visual-container">
           ${graphImg ? `<img src="${graphImg}">` : '<p>Graph Unavailable</p>'}
         </div>
 
-        <div class="label">Evidence List & Sensitivity Analysis</div>
+        <div class="label" style="margin-bottom:8px;">Probability Update Trend</div>
+        <div class="visual-container">
+          ${chartImg ? `<img src="${chartImg}" style="width: 100%;">` : '<p>Chart Unavailable</p>'}
+        </div>
+      </div>
+
+      <div class="page">
+        <div class="label" style="margin-top:0; font-size:12px;">Evidence List & Sensitivity Analysis</div>
         <table>
           <thead>
             <tr>
@@ -2261,18 +2338,11 @@ function exportPDF() {
             }).join('')}
           </tbody>
         </table>
-      </div>
 
-      <div class="page">
-        <div class="label">Probability Update Trend</div>
-        <div style="border: 1px solid var(--border); border-radius:10px; padding:15px; margin-bottom:20px;">
-          ${chartImg ? `<img src="${chartImg}" style="width:100%;">` : '<p>Chart Unavailable</p>'}
-        </div>
-
-        <div class="card" style="background:#fffbeb; border-color:#fef3c7;">
+        <div class="card" style="background:#fffbeb; border-color:#fef3c7; margin-top:25px;">
           <div class="label" style="color:#92400e;">Analytic Guardrails & Stability</div>
           <div style="font-size:12px; line-height:1.6;">
-            ${document.getElementById('biasWarning').innerHTML || "No bias warnings."}<br>
+            ${document.getElementById('biasWarning').innerHTML || "No bias warnings."}<br><br>
             ${document.getElementById('stressTestWarning').innerHTML || "Stress test not performed."}
           </div>
         </div>
@@ -2285,7 +2355,7 @@ function exportPDF() {
 
       <script>
         window.onload = function() {
-          setTimeout(() => { window.print(); }, 1000);
+          setTimeout(() => { window.print(); }, 1200);
         };
       <\/script>
     </body>
