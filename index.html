@@ -1,0 +1,1653 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bayesian Canvas · Field Edition</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%231A6CF6' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='5' r='3'/%3E%3Ccircle cx='6' cy='19' r='3'/%3E%3Ccircle cx='18' cy='19' r='3'/%3E%3Cline x1='10.5' y1='7.5' x2='7.5' y2='16.5'/%3E%3Cline x1='13.5' y1='7.5' x2='16.5' y2='16.5'/%3E%3C/svg%3E">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;1,400&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.28.1/cytoscape.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+:root {
+  --navy:    #0B2545;
+  --blue:    #1A6CF6;
+  --blue-lt: #4D8EFF;
+  --sky:     #00C6FF;
+  --teal:    #0AB7A0;
+  --emerald: #0D9E6E;
+  --amber:   #F5A623;
+  --rose:    #E8445A;
+  --slate:   #5E7A94;
+  --bg:      #EBF3FF;
+  --surface: #FFFFFF;
+  --panel:   #F4F8FF;
+  --border:  #D0DDED;
+  --text:    #0B2545;
+  --muted:   #6B8299;
+  --mono:    'IBM Plex Mono', monospace;
+  --sans:    'Sora', system-ui, sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--sans);background:var(--bg);min-height:100vh;padding:24px 16px;
+  background-image: radial-gradient(ellipse at 10% 20%,rgba(26,108,246,.06) 0%,transparent 60%),
+                    radial-gradient(ellipse at 90% 80%,rgba(0,198,255,.05) 0%,transparent 60%);}
+#app{max-width:1440px;margin:0 auto}
+
+/* ─── HEADER ─── */
+.app-header{background:var(--navy);border-radius:22px;padding:24px 32px;margin-bottom:24px;
+  display:flex;align-items:center;gap:20px;flex-wrap:wrap;
+  box-shadow:0 8px 32px rgba(11,37,69,.25);}
+.app-logo{font-size:1.5rem;letter-spacing:-.03em;color:#fff;font-weight:700;white-space:nowrap}
+.app-logo span{color:var(--sky)}
+.header-inputs{display:flex;gap:12px;flex:1;min-width:280px}
+.header-input{background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.15);border-radius:12px;
+  padding:9px 14px;color:#fff;font-family:var(--sans);font-size:.9rem;flex:1;min-width:80px;transition:.15s}
+.header-input::placeholder{color:rgba(255,255,255,.35)}
+.header-input:focus{outline:none;border-color:var(--sky);background:rgba(255,255,255,.14)}
+.header-meta{font-size:.78rem;color:rgba(255,255,255,.45);font-family:var(--mono);margin-left:auto}
+.save-indicator{display:flex;align-items:center;gap:6px;font-size:.75rem;color:rgba(255,255,255,.5)}
+.save-dot{width:7px;height:7px;border-radius:50%;background:var(--teal);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+/* ─── MAIN GRID ─── */
+.main-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+@media(max-width:900px){.main-grid{grid-template-columns:1fr}}
+
+/* ─── PANELS ─── */
+.panel{background:var(--surface);border-radius:18px;border:1px solid var(--border);
+  padding:20px;box-shadow:0 2px 12px rgba(11,37,69,.04)}
+.panel+.panel{margin-top:16px}
+.panel-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.panel-title{font-size:.95rem;font-weight:600;color:var(--navy);display:flex;align-items:center;gap:8px}
+.panel-title .icon{width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:1rem}
+
+/* ─── INPUTS ─── */
+.input{background:var(--panel);border:1.5px solid var(--border);border-radius:12px;
+  padding:9px 14px;font-family:var(--sans);font-size:.9rem;width:100%;color:var(--text);transition:.15s}
+.input:focus{outline:none;border-color:var(--blue);background:#fff;box-shadow:0 0 0 3px rgba(26,108,246,.12)}
+.input-sm{padding:6px 10px;font-size:.85rem}
+textarea.input{resize:vertical;min-height:56px}
+
+/* ─── BUTTONS ─── */
+.btn{border-radius:30px;padding:8px 18px;font-family:var(--sans);font-size:.85rem;font-weight:500;
+  cursor:pointer;transition:.12s;border:1.5px solid transparent;display:inline-flex;align-items:center;gap:6px}
+.btn-primary{background:var(--blue);color:#fff;border-color:var(--blue)}
+.btn-primary:hover{background:#1558d4;border-color:#1558d4}
+.btn-ghost{background:var(--panel);color:var(--navy);border-color:var(--border)}
+.btn-ghost:hover{background:var(--bg);border-color:#b0c4d8}
+.btn-danger{background:#fff0f2;color:var(--rose);border-color:#fac9d0}
+.btn-danger:hover{background:#ffe0e5}
+.btn-sm{padding:5px 12px;font-size:.78rem}
+.btn-teal{background:var(--teal);color:#fff;border-color:var(--teal)}
+.btn-teal:hover{background:#099e8a}
+.btn-sample{background:linear-gradient(135deg,#fff7e6,#fff0cc);color:#a05c00;border-color:#f5c97a}
+.btn-sample:hover{background:linear-gradient(135deg,#fff0cc,#ffe8a0)}
+
+/* ─── PRIOR SLIDER ─── */
+.prior-row{display:flex;align-items:center;gap:14px;margin-top:12px}
+.prior-label{font-size:.8rem;color:var(--muted);width:110px;flex-shrink:0}
+.slider-wrap{flex:1;position:relative}
+input[type=range]{-webkit-appearance:none;
+  appearance:none;
+  width:100%;height:6px;border-radius:3px;outline:none;cursor:pointer;
+  background:linear-gradient(to right,var(--blue) 0%,var(--blue) var(--val,50%),#D0DDED var(--val,50%),#D0DDED 100%)}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;
+  background:#fff;border:2.5px solid var(--blue);box-shadow:0 2px 6px rgba(26,108,246,.3)}
+.prior-badge{font-family:var(--mono);font-size:1rem;font-weight:500;color:var(--navy);min-width:50px;text-align:right}
+.prior-qual{font-size:.75rem;color:var(--muted);text-align:right;min-width:70px}
+
+/* ─── EVIDENCE CARDS ─── */
+.ev-list{display:flex;flex-direction:column;gap:10px;margin-top:8px}
+.ev-card{background:var(--panel);border:1.5px solid var(--border);border-radius:14px;padding:14px 16px;
+  position:relative;transition:.15s}
+.ev-card:hover{border-color:#b0c8e8;box-shadow:0 3px 10px rgba(26,108,246,.07)}
+.ev-card.ev-support{border-left:4px solid var(--emerald)}
+.ev-card.ev-oppose{border-left:4px solid var(--rose)}
+.ev-card.ev-neutral{border-left:4px solid var(--amber)}
+.ev-card-top{display:grid;grid-template-columns:1fr 90px 90px 36px;gap:8px;align-items:center}
+.ev-tag{font-size:.7rem;font-weight:600;padding:2px 8px;border-radius:20px;margin-left:6px}
+.ev-tag.sup{background:#d4f5e9;color:#0b6e4d}
+.ev-tag.opp{background:#ffe0e5;color:#b01c2e}
+.ev-tag.neu{background:#fff3d4;color:#9a6200}
+.ev-meta{display:flex;align-items:center;gap:6px}
+.ev-label{font-size:.72rem;color:var(--muted);margin-bottom:2px}
+.ev-card-bottom{margin-top:10px}
+.conf-row{display:flex;align-items:center;gap:10px}
+.conf-label{font-size:.72rem;color:var(--muted);width:60px;flex-shrink:0}
+.conf-badge{font-family:var(--mono);font-size:.82rem;font-weight:500;color:var(--navy);min-width:34px}
+.impact-bar-wrap{margin-top:8px}
+.impact-bar-label{font-size:.7rem;color:var(--muted);margin-bottom:3px;display:flex;justify-content:space-between}
+.impact-bar-track{height:6px;background:#e4ecf5;border-radius:3px;position:relative;overflow:visible}
+.impact-bar-fill{height:6px;border-radius:3px;position:absolute;transition:.3s}
+.impact-bar-fill.pos{background:linear-gradient(90deg,var(--teal),var(--emerald))}
+.impact-bar-fill.neg{background:linear-gradient(90deg,var(--rose),#ff8c98);right:0}
+.impact-bar-center{position:absolute;left:50%;top:-2px;bottom:-2px;width:1.5px;background:#b0c4d8}
+.eff-lr-val{font-family:var(--mono);font-size:.72rem;color:var(--muted)}
+.lr-help{font-size:.7rem;color:var(--blue);cursor:help;text-decoration:underline dotted}
+.delete-ev{position:absolute;top:10px;right:10px;background:none;border:none;color:#b0bec8;cursor:pointer;
+  font-size:1.1rem;padding:2px 4px;border-radius:6px;transition:.1s}
+.delete-ev:hover{color:var(--rose);background:#ffe0e5}
+
+/* ─── POSTERIOR DISPLAY ─── */
+.posterior-main{background:linear-gradient(135deg,var(--navy),#1b3d6e);border-radius:16px;
+  padding:20px 24px;color:#fff;margin-top:12px}
+.posterior-row{display:flex;align-items:baseline;gap:10px}
+.posterior-val{font-family:var(--mono);font-size:2.2rem;font-weight:500;color:#fff}
+.posterior-pct{font-family:var(--mono);font-size:1.1rem;color:rgba(255,255,255,.6)}
+.posterior-label{font-size:.78rem;color:rgba(255,255,255,.5);margin-top:4px}
+.posterior-bar-wrap{margin-top:14px}
+.posterior-bar-track{height:8px;background:rgba(255,255,255,.15);border-radius:4px;position:relative;overflow:hidden}
+.posterior-bar-fill{height:8px;border-radius:4px;background:linear-gradient(90deg,var(--sky),var(--teal));
+  transition:.5s cubic-bezier(.4,0,.2,1)}
+.threshold-line{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--amber);border-radius:1px}
+.interpretation-box{
+  background:#f4f8ff;
+  border:1px solid #d0dded;
+  border-radius:8px;
+  padding:14px 16px;
+  color:#0b2545;
+  margin-bottom:16px;
+
+  /* FORCE NORMAL TEXT FLOW */
+  column-count:1;
+  display:block;
+}
+
+.interpretation-box p{
+  margin:6px 0;
+  text-align:left;
+  column-count:1;
+  word-break:normal;
+  white-space:normal;
+}
+
+.guide-title{
+  font-weight:600;
+  margin-bottom:6px;
+  color:#0b2545;
+}
+
+/* ─── THRESHOLD ─── */
+.threshold-panel{display:flex;align-items:center;gap:10px;margin-top:10px;
+  background:var(--panel);border:1.5px solid var(--border);border-radius:12px;padding:10px 14px}
+.threshold-status{display:flex;align-items:center;gap:6px;font-size:.8rem;font-weight:600}
+.status-dot{width:9px;height:9px;border-radius:50%}
+.status-dot.meet{background:var(--emerald)}
+.status-dot.miss{background:var(--rose)}
+.status-dot.close{background:var(--amber)}
+
+/* ─── SCENARIO ─── */
+.scenario-compare{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-top:16px}
+.compare-card{background:var(--panel);border:1.5px solid var(--border);border-radius:12px;padding:14px;text-align:center}
+.compare-label{font-size:.72rem;color:var(--muted);margin-bottom:6px}
+.compare-val{font-family:var(--mono);font-size:1.5rem;font-weight:500;color:var(--navy)}
+.compare-delta{font-family:var(--mono);font-size:.9rem;font-weight:600;margin-top:4px}
+.delta-pos{color:var(--emerald)}
+.delta-neg{color:var(--rose)}
+.delta-zero{color:var(--muted)}
+
+/* ─── SENSITIVITY ─── */
+.sensitivity-table{width:100%;border-collapse:collapse;font-size:.82rem;margin-top:8px}
+.sensitivity-table th{text-align:left;color:var(--muted);font-weight:500;font-size:.75rem;
+  padding:6px 8px;border-bottom:1.5px solid var(--border)}
+.sensitivity-table td{padding:7px 8px;border-bottom:1px solid #edf2f8;vertical-align:middle}
+.sensitivity-table tr:last-child td{border-bottom:none}
+.sensitivity-table tr:hover td{background:var(--panel)}
+.impact-mini-bar{height:8px;border-radius:4px;display:inline-block;min-width:4px;vertical-align:middle;margin-right:4px}
+.impact-mini-pos{background:linear-gradient(90deg,var(--teal),var(--emerald))}
+.impact-mini-neg{background:linear-gradient(90deg,#ff8c98,var(--rose))}
+
+/* ─── GRAPH ─── */
+#cy{width:100%;height:280px;background:#FAFCFF;border-radius:14px;border:1.5px solid var(--border);margin-top:12px}
+.graph-legend{display:flex;gap:14px;flex-wrap:wrap;margin-top:8px}
+.legend-item{display:flex;align-items:center;gap:5px;font-size:.72rem;color:var(--muted)}
+.legend-dot{width:10px;height:10px;border-radius:50%}
+
+/* ─── TABS ─── */
+.tabs{display:flex;gap:4px;margin-bottom:16px;background:var(--panel);border-radius:10px;padding:4px}
+.tab{flex:1;text-align:center;padding:7px 12px;border-radius:8px;font-size:.82rem;font-weight:500;
+  color:var(--muted);cursor:pointer;transition:.15s;border:none;background:none;font-family:var(--sans)}
+.tab.active{background:#fff;color:var(--navy);box-shadow:0 1px 5px rgba(11,37,69,.1)}
+.tab-content{display:none}
+.tab-content.active{display:block}
+
+/* ─── ACTION BAR ─── */
+.action-bar{display:flex;gap:10px;flex-wrap:wrap;margin-top:20px;background:var(--surface);
+  border-radius:16px;padding:16px;border:1px solid var(--border)}
+.action-divider{width:1px;background:var(--border);margin:0 6px;align-self:stretch}
+
+/* ─── TOOLTIP ─── */
+.tooltip-wrap{position:relative;display:inline-flex}
+.tooltip-wrap .tip{display:none;position:absolute;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%);
+  background:var(--navy);color:#fff;font-size:.72rem;border-radius:8px;padding:8px 12px;white-space:nowrap;
+  z-index:100;line-height:1.5;max-width:240px;white-space:normal;text-align:center;
+  box-shadow:0 4px 16px rgba(0,0,0,.2)}
+.tooltip-wrap:hover .tip{display:block}
+.help-icon{width:18px;height:18px;border-radius:50%;background:var(--border);color:var(--muted);
+  font-size:.7rem;font-weight:700;display:inline-flex;align-items:center;justify-content:center;
+  cursor:help;flex-shrink:0}
+
+/* ─── NOTES ─── */
+.ev-notes-toggle{font-size:.72rem;color:var(--blue);cursor:pointer;background:none;border:none;
+  font-family:var(--sans);padding:0;margin-top:6px}
+.ev-notes-toggle:hover{text-decoration:underline}
+.ev-notes{margin-top:6px;display:none}
+.ev-notes.open{display:block}
+
+/* ─── MISC ─── */
+.section-title{font-size:.82rem;font-weight:600;color:var(--muted);text-transform:uppercase;
+  letter-spacing:.06em;margin-bottom:10px}
+.row{display:flex;align-items:center;gap:10px}
+.flex-1{flex:1}
+.mt-8{margin-top:8px}
+.mt-12{margin-top:12px}
+.mt-16{margin-top:16px}
+.full-width{grid-column:1/-1}
+.chip{display:inline-flex;align-items:center;gap:4px;background:var(--panel);border:1px solid var(--border);
+  border-radius:20px;padding:3px 10px;font-size:.72rem;color:var(--muted)}
+.badge-blue{background:#dbeafe;color:#1e40af;border-radius:20px;padding:2px 9px;font-size:.72rem;font-weight:600}
+.divider{height:1px;background:var(--border);margin:16px 0}
+
+/* ─── LR PRESETS MENU ─── */
+.lr-presets{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px}
+.lr-preset-btn{padding:3px 9px;border-radius:20px;font-size:.72rem;border:1px solid var(--border);
+  background:var(--panel);color:var(--navy);cursor:pointer;transition:.1s;font-family:var(--sans)}
+.lr-preset-btn:hover{background:var(--bg);border-color:#b0c8e8}
+.lr-preset-btn.strong-for{border-color:#a7e8d3;color:#0b6e4d;background:#edfbf5}
+.lr-preset-btn.weak-for{border-color:#b8dcf0;color:#145580}
+.lr-preset-btn.against{border-color:#fac9d0;color:#b01c2e;background:#fff0f2}
+
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:200;
+  align-items:center;justify-content:center}
+.modal-overlay.open{display:flex}
+.modal{background:#fff;border-radius:20px;padding:28px;max-width:480px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,.2)}
+.modal h3{font-size:1.1rem;font-weight:600;color:var(--navy);margin-bottom:12px}
+.modal p,.modal li{font-size:.85rem;color:#3a5068;line-height:1.65}
+.modal ul{padding-left:18px}
+.modal li{margin-bottom:4px}
+.modal table{width:100%;margin-top:12px;font-size:.8rem}
+.modal th{color:var(--muted);font-weight:500;padding:4px 8px;text-align:left;border-bottom:1px solid var(--border)}
+.modal td{padding:5px 8px;border-bottom:1px solid #f0f4f8}
+
+.interpretation-box{
+  background: linear-gradient(180deg,#f8fbff,#f1f6ff);
+  border:1px solid #d6e2f3;
+  border-radius:10px;
+  padding:16px 18px;
+  color:#1c3557;
+  font-size:0.92rem;
+  line-height:1.5;
+  box-shadow:0 2px 6px rgba(0,0,0,0.04);
+}
+
+/* ─── GUIDE MODAL STYLES ─── */
+.guide-wrap {
+  --g-navy:      #1a2b4a;
+  --g-navy-mid:  #2d4470;
+  --g-accent:    #2563eb;
+  --g-accent-lt: #dbeafe;
+  --g-gold:      #b45309;
+  --g-gold-lt:   #fef3c7;
+  --g-green:     #15803d;
+  --g-green-lt:  #dcfce7;
+  --g-red:       #b91c1c;
+  --g-red-lt:    #fee2e2;
+  --g-surface:   #f8faff;
+  --g-border:    #d4dff5;
+  --g-text:      #1e293b;
+  --g-muted:     #64748b;
+  --g-mono:      'DM Mono', monospace;
+  --g-serif:     'Lora', serif;
+  --g-sans:      'DM Sans', sans-serif;
+
+  font-family: var(--g-sans);
+  font-size: 15px;
+  line-height: 1.75;
+  color: var(--g-text);
+  max-width: 820px;
+  width: 95%;
+  max-height: 90vh;
+  overflow-y: auto;
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0,0,0,.3);
+  position: relative;
+  text-align: left;
+}
+
+.guide-wrap * { box-sizing: border-box; }
+
+.guide-header { background: linear-gradient(135deg, var(--g-navy) 0%, var(--g-navy-mid) 100%); padding: 36px 40px 32px; color: #fff; position: relative; }
+
+/* ─── PERBAIKAN WARNA TEKS HEADER ─── */
+.guide-header h1 { 
+  font-family: var(--g-serif); 
+  font-size: 1.7rem; 
+  font-weight: 600; 
+  line-height: 1.3; 
+  color: #ffffff !important; /* Paksa jadi putih bersih */
+  margin-bottom: 10px; 
+}
+
+.guide-header .label { 
+  font-size: 11px; 
+  font-weight: 600; 
+  letter-spacing: .14em; 
+  text-transform: uppercase; 
+  color: #d1e9ff !important; /* Biru sangat muda agar elegan */
+  margin-bottom: 10px; 
+}
+
+.guide-header p { 
+  font-size: 14px; 
+  color: #e2f1ff !important; /* Biru putih agar tidak terlalu menusuk mata */
+  max-width: 580px; 
+  line-height: 1.65; 
+  margin: 0; 
+}
+
+.guide-body { padding: 36px 40px; }
+.section { margin-bottom: 40px; }
+.guide-wrap .section-title { display: flex; align-items: center; gap: 10px; font-family: var(--g-serif); font-size: 1.08rem; font-weight: 600; color: var(--g-navy); margin-bottom: 14px; padding-bottom: 8px; border-bottom: 2px solid var(--g-accent-lt); text-transform: none; }
+.guide-wrap .section-title .num { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; background: var(--g-navy); color: #fff; border-radius: 50%; font-family: var(--g-mono); font-size: 11px; font-weight: 500; flex-shrink: 0; }
+.guide-wrap h5.sub { font-size: .88rem; font-weight: 600; color: var(--g-navy-mid); text-transform: uppercase; letter-spacing: .07em; margin: 20px 0 6px; }
+.guide-wrap p { margin-bottom: 12px; color: var(--g-text); font-size: 14.5px; }
+.guide-wrap p:last-child { margin-bottom: 0; }
+.callout { border-radius: 10px; padding: 16px 18px; margin: 16px 0; font-size: 14px; line-height: 1.7; }
+.callout.warning { background: var(--g-gold-lt); border-left: 4px solid var(--g-gold); color: #78350f; }
+.callout.info { background: var(--g-accent-lt); border-left: 4px solid var(--g-accent); color: #1e3a8a; }
+.callout.success { background: var(--g-green-lt); border-left: 4px solid var(--g-green); color: #14532d; }
+.callout strong { font-weight: 600; }
+.callout .callout-title { font-weight: 600; display: block; margin-bottom: 5px; font-size: 13px; text-transform: uppercase; letter-spacing: .06em; }
+.formula-box { background: var(--g-surface); border: 1px solid var(--g-border); border-radius: 10px; padding: 16px 20px; margin: 16px 0; text-align: center; font-family: var(--g-mono); font-size: .92rem; color: var(--g-navy); letter-spacing: .01em; }
+.formula-box .formula-label { font-family: var(--g-sans); font-size: 11px; text-transform: uppercase; letter-spacing: .1em; color: var(--g-muted); display: block; margin-bottom: 8px; }
+.guide-wrap code { font-family: var(--g-mono); font-size: .88em; background: var(--g-surface); border: 1px solid var(--g-border); border-radius: 4px; padding: 1px 6px; color: var(--g-navy-mid); }
+.guide-wrap ul, .guide-wrap ol { padding-left: 20px; margin: 10px 0 14px; }
+.guide-wrap li { font-size: 14.5px; margin-bottom: 6px; line-height: 1.65; }
+.guide-wrap li strong { color: var(--g-navy); }
+.conf-scale { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin: 16px 0; }
+.conf-cell { background: var(--g-surface); border: 1px solid var(--g-border); border-radius: 8px; padding: 10px 8px; text-align: center; font-size: 13px; }
+.conf-cell .val { font-family: var(--g-mono); font-size: 1.1rem; font-weight: 500; display: block; color: var(--g-navy); margin-bottom: 3px; }
+.conf-cell .desc { color: var(--g-muted); font-size: 11.5px; }
+.conf-cell.hi { background: #eff6ff; border-color: #93c5fd; }
+.conf-cell.hi .val { color: var(--g-accent); }
+.lr-band { display: flex; flex-direction: column; gap: 6px; margin: 12px 0; }
+.lr-row { display: flex; align-items: center; gap: 10px; font-size: 13.5px; }
+.lr-badge { font-family: var(--g-mono); font-size: 12px; font-weight: 500; padding: 3px 9px; border-radius: 5px; min-width: 60px; text-align: center; flex-shrink: 0; }
+.lr-badge.strong-for  { background: #15803d; color: #fff; }
+.lr-badge.mod-for     { background: #4ade80; color: #14532d; }
+.lr-badge.weak-for    { background: #bbf7d0; color: #14532d; }
+.lr-badge.neutral     { background: #e2e8f0; color: #475569; }
+.lr-badge.weak-ag     { background: #fecaca; color: #7f1d1d; }
+.lr-badge.mod-ag      { background: #f87171; color: #7f1d1d; }
+.lr-badge.strong-ag   { background: #b91c1c; color: #fff; }
+.example-block { background: var(--g-surface); border: 1px solid var(--g-border); border-radius: 12px; padding: 18px 22px; margin: 16px 0; font-size: 14px; }
+.example-block .ex-title { font-size: 11.5px; font-weight: 600; text-transform: uppercase; letter-spacing: .09em; color: var(--g-muted); margin-bottom: 12px; }
+.calc-row { display: flex; align-items: flex-start; gap: 12px; padding: 8px 0; border-bottom: 1px solid #e2e8f0; font-size: 13.5px; }
+.calc-row:last-child { border-bottom: none; }
+.calc-row .step { font-family: var(--g-mono); font-size: 11px; background: var(--g-navy); color: #fff; padding: 2px 7px; border-radius: 4px; flex-shrink: 0; margin-top: 2px; }
+.calc-row .detail { color: var(--g-muted); font-size: 13px; }
+.calc-row .result { font-family: var(--g-mono); color: var(--g-accent); font-weight: 500; margin-left: auto; flex-shrink: 0; }
+.guide-wrap table { width: 100%; border-collapse: collapse; font-size: 13.5px; margin: 16px 0; }
+.guide-wrap thead th { background: var(--g-navy); color: #fff; padding: 10px 14px; text-align: left; font-weight: 500; font-size: 12.5px; letter-spacing: .03em; border-bottom: none; }
+.guide-wrap thead th:first-child { border-radius: 8px 0 0 0; }
+.guide-wrap thead th:last-child  { border-radius: 0 8px 0 0; }
+.guide-wrap tbody td { padding: 10px 14px; border-bottom: 1px solid var(--g-border); vertical-align: top; line-height: 1.6; }
+.guide-wrap tbody tr:nth-child(even) td { background: var(--g-surface); }
+.guide-wrap tbody td strong { color: var(--g-navy); }
+.guide-wrap hr { border: none; border-top: 1px solid var(--g-border); margin: 32px 0; }
+.guide-footer { background: var(--g-surface); border-top: 1px solid var(--g-border); padding: 18px 40px; font-size: 12.5px; color: var(--g-muted); line-height: 1.6; }
+
+</style>
+</head>
+<body>
+<div id="app">
+
+<!-- ═══ HEADER ═══ -->
+<div class="app-header">
+  <div class="app-logo">🧮 Bayesian <span>Canvas</span></div>
+  <div class="header-inputs">
+    <input class="header-input" id="projectTitle" placeholder="Project title" value="My Project">
+    <input class="header-input" id="projectAuthor" placeholder="Analyst name" value="analyst">
+  </div>
+  <div style="display:flex;align-items:center;gap:16px;margin-left:auto">
+    <div class="header-meta" id="headerDate"></div>
+    <div class="save-indicator"><div class="save-dot"></div> autosaved</div>
+  </div>
+</div>
+
+<!-- ═══ MAIN GRID ═══ -->
+<div class="main-grid">
+
+  <!-- ── LEFT COLUMN: INPUTS ── -->
+  <div>
+
+    <!-- HYPOTHESIS PANEL -->
+    <div class="panel">
+      <div class="panel-head">
+        <div class="panel-title"><div class="icon" style="background:#dbeafe">🎯</div> Hypothesis</div>
+        <button class="btn btn-ghost btn-sm" id="btnHelpLR">📖 What is LR?</button>
+      </div>
+      <input class="input" id="hypothesisTitle" placeholder="e.g., Program will reduce child malnutrition by 20%">
+      <textarea class="input mt-8" id="hypothesisDesc" placeholder="Description / context" rows="2"></textarea>
+
+      <div class="prior-row mt-12">
+        <div class="prior-label">Prior probability</div>
+        <div class="slider-wrap">
+          <input type="range" id="prior" min="0.01" max="0.99" step="0.01" value="0.50">
+        </div>
+        <div class="prior-badge" id="priorVal">0.500</div>
+        <div class="prior-qual" id="priorQual">Uncertain</div>
+      </div>
+
+      <!-- THRESHOLD -->
+      <div class="row mt-12" style="gap:8px">
+        <span style="font-size:.8rem;color:var(--muted);white-space:nowrap">Decision threshold</span>
+        <input class="input input-sm flex-1" type="number" id="threshold" min="0" max="1" step="0.01" value="0.70" style="max-width:80px">
+        <span style="font-size:.75rem;color:var(--muted)">— act if posterior ≥ this</span>
+      </div>
+    </div>
+
+    <!-- EVIDENCE PANEL -->
+    <div class="panel">
+      <div class="panel-head">
+        <div class="panel-title"><div class="icon" style="background:#dcfce7">📋</div> Base Evidence
+          <div class="tooltip-wrap">
+            <div class="help-icon">?</div>
+            <div class="tip">Each evidence item has a Likelihood Ratio (LR) and Confidence. LR > 1 supports the hypothesis; LR < 1 contradicts it. Confidence (0–1) scales the impact.</div>
+          </div>
+        </div>
+        <button class="btn btn-primary btn-sm" id="addEvidence">＋ Add evidence</button>
+      </div>
+      <div id="evidenceList" class="ev-list"></div>
+      <div id="emptyEv" style="text-align:center;color:var(--muted);font-size:.85rem;padding:20px 0;display:none">
+        No evidence yet — click <strong>+ Add evidence</strong> to begin
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ── RIGHT COLUMN: RESULTS ── -->
+  <div>
+
+    <!-- POSTERIOR PANEL -->
+    <div class="panel">
+      <div class="panel-head">
+        <div class="panel-title"><div class="icon" style="background:#fef3c7">📊</div> Results</div>
+        <div id="thresholdStatus" class="threshold-status"></div>
+      </div>
+
+      <div class="posterior-main">
+        <div class="posterior-row">
+          <div class="posterior-val" id="basePosteriorVal">0.5000</div>
+          <div class="posterior-pct" id="basePosteriorPct">(50.0%)</div>
+        </div>
+        <div class="posterior-label">Posterior probability — base model</div>
+        <div class="posterior-bar-wrap mt-12">
+          <div class="posterior-bar-track">
+            <div class="posterior-bar-fill" id="basePosteriorBar" style="width:50%"></div>
+            <div class="threshold-line" id="thresholdLine" style="left:70%"></div>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:.7rem;color:rgba(255,255,255,.4);margin-top:4px">
+            <span>0%</span><span style="color:rgba(245,166,35,.6)">▲ threshold</span><span>100%</span>
+          </div>
+        </div>
+        <div class="interpretation-box" id="interpretationBox"></div>
+      </div>
+    </div>
+
+    <!-- TABS: SENSITIVITY / GRAPH -->
+    <div class="panel mt-12">
+      <div class="tabs">
+        <button class="tab active" data-tab="sensitivity">📉 Sensitivity</button>
+        <button class="tab" data-tab="graph">🕸️ Evidence graph</button>
+        <button class="tab" data-tab="scenario">🔮 Scenario</button>
+        <button class="tab" data-tab="stats">📈 Statistics</button>
+      </div>
+
+      <!-- SENSITIVITY TAB -->
+      <div class="tab-content active" id="tab-sensitivity">
+        <div class="section-title">Impact of each evidence on posterior</div>
+        <p style="font-size:.78rem;color:var(--muted);margin-bottom:10px">Shows how much each piece of evidence moves the posterior. Green = supports hypothesis, Red = weakens it.</p>
+        <table class="sensitivity-table" id="sensitivityTable">
+          <thead><tr><th>Evidence</th><th>Eff. LR</th><th>Impact</th><th>Without</th></tr></thead>
+          <tbody id="sensitivityBody"></tbody>
+        </table>
+        <div id="sensitivityEmpty" style="text-align:center;color:var(--muted);font-size:.82rem;padding:16px 0;display:none">Add evidence to see sensitivity analysis</div>
+      </div>
+
+      <!-- GRAPH TAB -->
+      <div class="tab-content" id="tab-graph">
+        <div id="cy"></div>
+        <div class="graph-legend mt-8">
+          <div class="legend-item"><div class="legend-dot" style="background:var(--blue)"></div> Hypothesis</div>
+          <div class="legend-item"><div class="legend-dot" style="background:var(--emerald)"></div> Supporting (LR>1.05)</div>
+          <div class="legend-item"><div class="legend-dot" style="background:var(--rose)"></div> Contradicting (LR<0.95)</div>
+          <div class="legend-item"><div class="legend-dot" style="background:var(--amber)"></div> Neutral</div>
+        </div>
+      </div>
+
+      <!-- SCENARIO TAB -->
+      <div class="tab-content" id="tab-scenario">
+        <div class="row" style="justify-content:space-between;margin-bottom:12px">
+          <div style="font-size:.82rem;color:var(--muted)">Adjust evidence weights without changing base model.</div>
+          <button class="btn btn-ghost btn-sm" id="resetScenario">↻ Reset from base</button>
+        </div>
+
+        <div class="scenario-compare">
+          <div class="compare-card">
+            <div class="compare-label">Prior</div>
+            <div class="compare-val" id="sc-prior">—</div>
+          </div>
+          <div class="compare-card">
+            <div class="compare-label">Base posterior</div>
+            <div class="compare-val" id="sc-base">—</div>
+          </div>
+          <div class="compare-card">
+            <div class="compare-label">Scenario posterior</div>
+            <div class="compare-val" id="sc-scen">—</div>
+            <div class="compare-delta" id="sc-delta">—</div>
+          </div>
+        </div>
+
+        <div id="scenarioEvidenceList" class="ev-list mt-12"></div>
+        <div style="font-size:.75rem;color:var(--muted);margin-top:8px">💡 Tip: Add scenario-only evidence using the button below</div>
+        <button class="btn btn-ghost btn-sm mt-8" id="addScenarioEvidence">＋ Add scenario-only evidence</button>
+      </div>
+
+      <div class="tab-content" id="tab-stats">
+  <div class="row" style="justify-content:space-between;margin-bottom:12px">
+    <div style="font-size:.82rem;color:var(--muted)">The development of probability each time field evidence is entered (Sequential Updating).</div>
+  </div>
+  <div style="background:#fff; border:1px solid var(--border); border-radius:12px; padding:16px;">
+    <canvas id="statsChart" width="400" height="180"></canvas>
+  </div>
+</div>
+
+    </div>
+
+  </div>
+</div>
+
+<!-- ═══ ACTION BAR ═══ -->
+<div class="action-bar">
+  <button class="btn btn-ghost" id="newProject">🆕 New project</button>
+  <div class="action-divider"></div>
+  <button class="btn btn-ghost" id="saveJSON">💾 Save JSON</button>
+  <button class="btn btn-ghost" id="loadJSON">📂 Load JSON</button>
+  <input type="file" id="fileInput" accept=".json" style="display:none">
+  <div class="action-divider"></div>
+  <button class="btn btn-primary" id="exportPDF">📄 Export PDF</button>
+  <button class="btn btn-ghost" id="exportXML">📇 Dublin Core XML</button>
+  <button class="btn btn-ghost" id="exportCSV">📊 Export CSV</button>
+  <div class="action-divider"></div>
+  <button class="btn btn-sample" id="loadSample">🧪 Load sample</button>
+  <button class="btn btn-ghost" id="btnGuideModal">💡 Guide: Naive vs Full Bayes</button> <div style="margin-left:auto;font-size:.72rem;color:var(--muted)">All data stays in your browser · autosaved locally</div>
+</div>
+  <div style="margin-left:auto;font-size:.72rem;color:var(--muted)">All data stays in your browser · autosaved locally</div>
+</div>
+
+</div><!-- /app -->
+
+<!-- LR HELP MODAL -->
+<div class="modal-overlay" id="lrModal">
+  <div class="modal">
+    <h3>Understanding Likelihood Ratios (LR)</h3>
+    <p>A <strong>Likelihood Ratio</strong> measures how much a piece of evidence changes the probability of your hypothesis.</p>
+    <ul style="margin-top:10px">
+      <li><strong>LR = 1.0</strong> → Evidence is neutral (no effect)</li>
+      <li><strong>LR > 1.0</strong> → Evidence supports the hypothesis</li>
+      <li><strong>LR < 1.0</strong> → Evidence contradicts the hypothesis</li>
+    </ul>
+    <table>
+      <thead><tr><th>LR value</th><th>Meaning</th><th>Example</th></tr></thead>
+      <tbody>
+        <tr><td>3.0 – 5.0</td><td>Strong support</td><td>Direct field measurement</td></tr>
+        <tr><td>1.5 – 2.9</td><td>Moderate support</td><td>Survey with 70% coverage</td></tr>
+        <tr><td>1.05 – 1.4</td><td>Weak support</td><td>Indirect indicator</td></tr>
+        <tr><td>0.95 – 1.04</td><td>Neutral</td><td>Ambiguous report</td></tr>
+        <tr><td>0.4 – 0.94</td><td>Moderate against</td><td>Counter-evidence</td></tr>
+        <tr><td>0.1 – 0.39</td><td>Strong against</td><td>Contradicting study</td></tr>
+      </tbody>
+    </table>
+    <p style="margin-top:12px"><strong>Confidence</strong> scales the effect of LR. At 0.5, only √LR is applied. At 1.0, the full LR is used.</p>
+    <button class="btn btn-primary" style="margin-top:16px" id="closeLrModal">Got it</button>
+  </div>
+</div>
+
+<!--  GUIDE MODAL : NAIVE BAYES VS FULL BAYESIAN NETWORK -->
+
+<div class="modal-overlay" id="guideModal">
+  <div class="guide-wrap">
+    
+    <button id="closeGuideModal" style="position:absolute; top:20px; right:20px; background:rgba(255,255,255,0.2); border:none; color:#fff; width:36px; height:36px; border-radius:50%; font-size:16px; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:0.2s; z-index:10;" onmouseover="this.style.background='rgba(255,255,255,0.4)'" onmouseout="this.style.background='rgba(255,255,255,0.2)'">✕</button>
+
+    <div class="guide-header">
+      <div class="label">Methodology Reference</div>
+      <h1>Understanding the Bayesian Analysis Framework</h1>
+      <p>A comprehensive guide to how this application updates beliefs using evidence — including what Confidence means, how Likelihood Ratios work, and when to use Naive Bayes versus a full Bayesian Network.</p>
+    </div>
+
+    <div class="guide-body">
+      <div class="section">
+        <div class="section-title"><span class="num">0</span> Core Principle of This Application</div>
+        <div class="callout warning">
+          <span class="callout-title">⚠ Architecture Notice</span>
+          This application is built on a <strong>Naive Bayes architecture</strong>. It assumes that every piece of evidence you enter is <strong>conditionally independent</strong> from all other evidence, given the hypothesis. Understanding this assumption is essential for using the tool correctly.
+        </div>
+        <p>Bayesian reasoning is the mathematically principled way to update beliefs in light of new information. You start with a <em>prior</em> — what you believe before seeing the evidence — and you revise it into a <em>posterior</em> — what you should believe after seeing the evidence.</p>
+        <p>This application performs that revision iteratively: each evidence item is applied one after another, each multiplying the running probability by a factor derived from its Likelihood Ratio and your stated Confidence in it. The result is a transparent, auditable chain of reasoning.</p>
+      </div>
+
+      <div class="section">
+        <div class="section-title"><span class="num">1</span> How the Calculation Works</div>
+        <p>The engine converts the prior probability into <strong>odds</strong>, multiplies by each evidence item's effective Likelihood Ratio, then converts back to a probability. In compact form:</p>
+        <div class="formula-box">
+          <span class="formula-label">Master formula</span>
+          Posterior Odds = Prior Odds × ∏ ( LRᵢ ^ confidenceᵢ )
+        </div>
+        <p>The step-by-step logic:</p>
+        <ol>
+          <li>Convert your Prior Probability <code>P</code> into odds: <code>Odds = P / (1 − P)</code></li>
+          <li>For each evidence item <em>i</em>, compute its <strong>Effective LR</strong>: <code>LR_eff = LRᵢ ^ confidenceᵢ</code></li>
+          <li>Multiply the running odds by each Effective LR in sequence.</li>
+          <li>Convert the final odds back to a probability: <code>P_posterior = Odds / (1 + Odds)</code></li>
+        </ol>
+        <div class="callout info">
+          <strong>Why odds instead of percentages?</strong> Multiplying odds by Likelihood Ratios is mathematically clean and exact. Working directly in probabilities would require more complex arithmetic at every step.
+        </div>
+
+        <div class="example-block">
+          <div class="ex-title">📐 Worked Numerical Example</div>
+          <div class="calc-row">
+            <span class="step">Prior</span>
+            <div>Prior probability set to 0.40</div>
+            <span class="result">Odds = 0.667</span>
+          </div>
+          <div class="calc-row">
+            <span class="step">Ev.1</span>
+            <div>LR = 3.0, Confidence = 0.8 <span class="detail"> → LR_eff = 3.0 ^ 0.8 = 2.41</span></div>
+            <span class="result">Odds × 2.41 = 1.607</span>
+          </div>
+          <div class="calc-row">
+            <span class="step">Ev.2</span>
+            <div>LR = 0.5, Confidence = 1.0 <span class="detail"> → LR_eff = 0.5 ^ 1.0 = 0.50</span></div>
+            <span class="result">Odds × 0.50 = 0.804</span>
+          </div>
+          <div class="calc-row">
+            <span class="step">Post.</span>
+            <div>Convert final odds back to probability</div>
+            <span class="result">P = 0.804 / 1.804 ≈ 0.446</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-title"><span class="num">2</span> Hypothesis</div>
+        <p>The <strong>Hypothesis</strong> is the central claim you want to evaluate. It must be a clearly defined, falsifiable statement — something that can be either supported or contradicted by real-world observations.</p>
+        <div class="callout success">
+          <strong>Example hypothesis:</strong><br/>
+          <em>"Village development policies that focus heavily on physical infrastructure may unintentionally increase income inequality among residents."</em>
+        </div>
+        <p>A well-formed hypothesis is specific enough that you can meaningfully ask: <em>"Does this piece of evidence make this claim more or less plausible?"</em> All evidence you enter into the system is evaluated against this single hypothesis.</p>
+      </div>
+
+      <div class="section">
+        <div class="section-title"><span class="num">3</span> Prior Probability</div>
+        <p>The <strong>Prior Probability</strong> is your starting belief in the hypothesis <em>before</em> considering any current evidence. It represents the background plausibility of the claim based on existing knowledge, prior studies, expert consensus, or institutional experience.</p>
+        <ul>
+          <li><strong>0.50</strong> — You have no initial lean; the hypothesis is as likely as not. A reasonable default when you lack prior information.</li>
+          <li><strong>0.30</strong> — You consider the hypothesis unlikely based on prior knowledge.</li>
+          <li><strong>0.70</strong> — Prior experience or literature already suggests the hypothesis is plausible.</li>
+          <li><strong>0.10 – 0.20</strong> — Strong reason to doubt; use only if existing evidence strongly points away from the hypothesis.</li>
+          <li><strong>0.80 – 0.90</strong> — Substantial prior evidence already exists in favor; evidence is being used to confirm a near-established view.</li>
+        </ul>
+        <div class="callout warning">
+          <strong>Be honest about your prior.</strong> A biased starting point will distort the final posterior regardless of how carefully you calibrate your evidence. When in doubt, use 0.50 and let the evidence speak.
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-title"><span class="num">4</span> Decision Threshold</div>
+        <p>The <strong>Decision Threshold</strong> is the posterior probability value at which you consider the hypothesis sufficiently supported to justify a decision, intervention, or recommendation. It separates exploratory uncertainty from actionable confidence.</p>
+        <ul>
+          <li><strong>0.60</strong> — Low bar; appropriate for exploratory analysis or flagging issues for further investigation.</li>
+          <li><strong>0.70 – 0.75</strong> — Moderate confidence; suitable for programmatic recommendations or preliminary policy decisions.</li>
+          <li><strong>0.80 – 0.85</strong> — High bar; appropriate for significant resource allocation, formal reports, or public-facing recommendations.</li>
+          <li><strong>0.90+</strong> — Very high bar; use only where the cost of being wrong is severe.</li>
+        </ul>
+        <div class="callout info">
+          <strong>Choosing the right threshold is a judgment call.</strong> Consider the consequences of a false positive (acting when the hypothesis is actually false) versus a false negative (failing to act when it is true). Higher-stakes decisions warrant a higher threshold.
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-title"><span class="num">5</span> Evidence Items</div>
+        <p>Each evidence item represents a discrete real-world observation that bears on the hypothesis. Evidence can come from a wide variety of sources:</p>
+        <ul>
+          <li>Field observations and site visit reports</li>
+          <li>Survey data and community interviews</li>
+          <li>Statistical indicators and administrative data</li>
+          <li>Expert assessments and peer-reviewed findings</li>
+          <li>Policy documents and program outcomes</li>
+        </ul>
+        <h5 class="sub">Evidence Direction</h5>
+        <p>Each item must be labeled as either <strong>supporting</strong> (For) or <strong>contradicting</strong> (Against) the hypothesis. This directionality is built into the Likelihood Ratio: an LR above 1.0 supports the hypothesis, and an LR below 1.0 contradicts it. Providing both types of evidence produces a more balanced and credible analysis.</p>
+      </div>
+
+      <div class="section">
+        <div class="section-title"><span class="num">6</span> Likelihood Ratio (LR)</div>
+        <p>The <strong>Likelihood Ratio</strong> quantifies how much a specific piece of evidence shifts the probability of the hypothesis. Formally, it is the ratio of two probabilities:</p>
+        <div class="formula-box">
+          <span class="formula-label">Definition</span>
+          LR = P(Evidence | Hypothesis is TRUE) ÷ P(Evidence | Hypothesis is FALSE)
+        </div>
+        <p>In plain language: <em>How much more (or less) likely is it that we would observe this evidence if the hypothesis is true, compared to if it were false?</em></p>
+        <div class="lr-band">
+          <div class="lr-row"><span class="lr-badge strong-for">LR ≥ 5</span> Strong support — evidence is much more likely if hypothesis is true</div>
+          <div class="lr-row"><span class="lr-badge mod-for">LR 2–4</span> Moderate support — meaningfully increases confidence</div>
+          <div class="lr-row"><span class="lr-badge weak-for">LR 1.2–1.9</span> Weak support — slight positive update</div>
+          <div class="lr-row"><span class="lr-badge neutral">LR = 1</span> Neutral — evidence tells you nothing about the hypothesis</div>
+          <div class="lr-row"><span class="lr-badge weak-ag">LR 0.6–0.9</span> Weak contradiction — slight negative update</div>
+          <div class="lr-row"><span class="lr-badge mod-ag">LR 0.3–0.5</span> Moderate contradiction — meaningfully decreases confidence</div>
+          <div class="lr-row"><span class="lr-badge strong-ag">LR ≤ 0.2</span> Strong contradiction — evidence strongly argues against hypothesis</div>
+        </div>
+        <div class="callout info">
+          <strong>Tip:</strong> When in doubt, err toward moderate values (1.5–3.0 for supporting, 0.3–0.7 for contradicting). Extreme values like 10 or 0.05 require very strong justification and can dominate the entire analysis.
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-title"><span class="num">7</span> Confidence — What It Is and Why It Matters</div>
+        <div class="callout warning">
+          <span class="callout-title">★ Key Concept</span>
+          <strong>Confidence is not how strongly you believe the evidence supports the hypothesis.</strong> That is what the Likelihood Ratio captures. Confidence is a separate, orthogonal judgment: <strong>how reliable and trustworthy is the evidence itself?</strong>
+        </div>
+        <h5 class="sub">The Core Distinction</h5>
+        <p>Every piece of evidence carries two independent questions:</p>
+        <ol>
+          <li><strong>If this evidence is real and accurate, how much does it update my belief?</strong> → This is the <em>Likelihood Ratio</em>.</li>
+          <li><strong>How much do I trust that this evidence is real and accurate in the first place?</strong> → This is your <em>Confidence</em>.</li>
+        </ol>
+        <p>You might have an observation that, if true, would be very powerful evidence — but it comes from a single, unverified source. You give it a high LR because the finding is significant, but a low Confidence because you are uncertain about its quality. The model gracefully handles both dimensions simultaneously.</p>
+        <h5 class="sub">The Mathematical Effect</h5>
+        <p>Confidence works as an <strong>exponent</strong> applied to the Likelihood Ratio:</p>
+        <div class="formula-box">
+          <span class="formula-label">Effective Likelihood Ratio</span>
+          LR_effective = LR ^ confidence
+        </div>
+        <p>What this means in practice:</p>
+        <ul>
+          <li>At <strong>Confidence = 1.0</strong>, the evidence is applied at full strength: <code>LR_eff = LR</code></li>
+          <li>At <strong>Confidence = 0.5</strong>, the evidence is applied at half-power: <code>LR_eff = √LR</code></li>
+          <li>At <strong>Confidence = 0.0</strong>, the evidence has no effect: <code>LR_eff = 1.0</code> (neutral)</li>
+        </ul>
+        <p>Crucially, the <em>direction</em> of the evidence is preserved — reducing confidence simply pulls the effect toward neutrality, it does not reverse it.</p>
+        
+        <h5 class="sub">Confidence Reference Scale</h5>
+        <div class="conf-scale">
+          <div class="conf-cell"><span class="val">0.2</span><div class="desc">Anecdotal / unverified</div></div>
+          <div class="conf-cell"><span class="val">0.4</span><div class="desc">Single source, unclear method</div></div>
+          <div class="conf-cell"><span class="val">0.6</span><div class="desc">Reliable source, some caveats</div></div>
+          <div class="conf-cell"><span class="val">0.8</span><div class="desc">Strong source, minor uncertainty</div></div>
+          <div class="conf-cell hi"><span class="val">1.0</span><div class="desc">Verified, robust, high-quality data</div></div>
+        </div>
+
+        <h5 class="sub">What Degrades Confidence?</h5>
+        <ul>
+          <li><strong>Source quality:</strong> Unverified reports, single informants, rumors → lower confidence</li>
+          <li><strong>Sample size:</strong> One village versus a survey of one hundred villages → lower confidence for small samples</li>
+          <li><strong>Observation recency:</strong> Data from several years ago may no longer reflect current conditions</li>
+          <li><strong>Measurement method:</strong> Subjective assessments are less reliable than objective measurements</li>
+          <li><strong>Potential bias:</strong> Evidence gathered by parties with a stake in the outcome</li>
+          <li><strong>Consistency:</strong> Evidence that contradicts many other reliable sources</li>
+        </ul>
+
+        <div class="example-block">
+          <div class="ex-title">📌 Confidence in Practice</div>
+          <div class="calc-row">
+            <span class="step">Scenario</span>
+            <div>LR = 3.0 (moderately strong support)</div>
+            <span class="result"> </span>
+          </div>
+          <div class="calc-row">
+            <span class="step">C = 1.0</span>
+            <div>Verified field data, representative sample</div>
+            <span class="result">LR_eff = 3.00</span>
+          </div>
+          <div class="calc-row">
+            <span class="step">C = 0.7</span>
+            <div>Reliable source but only partial coverage</div>
+            <span class="result">LR_eff = 2.16</span>
+          </div>
+          <div class="calc-row">
+            <span class="step">C = 0.4</span>
+            <div>Single informant, unverified observation</div>
+            <span class="result">LR_eff = 1.55</span>
+          </div>
+          <div class="calc-row">
+            <span class="step">C = 0.1</span>
+            <div>Rumor / very low quality source</div>
+            <span class="result">LR_eff = 1.11</span>
+          </div>
+        </div>
+        <div class="callout success">
+          <strong>The key insight:</strong> Confidence allows you to include weak or uncertain evidence without letting it dominate the result. It is the mechanism that prevents low-quality data from being treated as equally powerful as verified findings. This makes the model robust to real-world data quality variation.
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-title"><span class="num">8</span> Impact on Posterior</div>
+        <p>This indicator shows the <strong>percentage-point change</strong> in the posterior probability attributable to a single evidence item. It answers the question: <em>"Of all the evidence I entered, which one moved the needle the most?"</em></p>
+        <p>Use this to:</p>
+        <ul>
+          <li>Identify the most influential factors driving your conclusion</li>
+          <li>Spot evidence that may be over-weighted (very high impact with low confidence)</li>
+          <li>Prioritize which data to verify or expand in further fieldwork</li>
+          <li>Communicate to stakeholders which findings are most critical</li>
+        </ul>
+      </div>
+
+      <div class="section">
+        <div class="section-title"><span class="num">9</span> Notes / Evidence Description</div>
+        <p>The notes field is optional but strongly recommended for any analysis that will be reviewed, shared, or revisited. Document:</p>
+        <ul>
+          <li>The source of the evidence (report name, survey date, institution)</li>
+          <li>How the observation was collected (methodology)</li>
+          <li>Why you assigned the specific LR and Confidence values you chose</li>
+          <li>Any caveats or limitations associated with the evidence</li>
+          <li>Links to supporting documents or data tables</li>
+        </ul>
+        <p>This documentation is what separates a transparent, auditable analysis from an opaque black box. It allows others — and your future self — to critically evaluate the reasoning behind each probability update.</p>
+      </div>
+
+      <hr/>
+
+      <div class="section">
+        <div class="section-title"><span class="num">10</span> The Independence Assumption & Double-Counting Risk</div>
+        <p>The core limitation of Naive Bayes is that it treats every evidence item as independent of the others. In reality, two observations may be causally linked: Evidence A may <em>cause</em> Evidence B. If you enter both independently, you apply the same underlying signal twice and <strong>double-count it</strong>.</p>
+        <div class="callout warning">
+          <strong>Example of double-counting risk:</strong><br/>
+          — Evidence A: "Road infrastructure in the area is severely damaged"<br/>
+          — Evidence B: "Logistics and supply distribution are significantly delayed"<br/><br/>
+          If damaged roads <em>cause</em> distribution delays, these are not independent observations. Entering both multiplies the impact of a single underlying cause, artificially inflating the posterior.
+        </div>
+        <h5 class="sub">The Fieldwork Solution: Composite Evidence</h5>
+        <p>When two observations are causally connected, <strong>merge them into a single composite evidence statement</strong> and assign one representative Likelihood Ratio to the combined observation:</p>
+        <div class="callout success">
+          <em>"Logistics and supply distribution are significantly delayed as a direct consequence of severe damage to road infrastructure."</em>
+        </div>
+        <p>This single entry captures the full meaning without double-counting. The Likelihood Ratio you assign should reflect the combined strength of both signals, and your Confidence should reflect how well-documented the causal link is.</p>
+      </div>
+
+      <div class="section">
+        <div class="section-title"><span class="num">11</span> Naive Bayes vs. Full Bayesian Networks</div>
+        <p>Full Bayesian Networks (also called Bayesian Belief Networks) represent causal dependencies between variables using a Directed Acyclic Graph (DAG). Each variable can conditionally depend on others, and inference propagates through the network via algorithms such as:</p>
+        <ul>
+          <li><strong>Belief Propagation</strong> (Message Passing) — efficient on tree-structured networks</li>
+          <li><strong>Variable Elimination</strong> — exact inference by marginalizing over hidden variables</li>
+          <li><strong>MCMC Sampling</strong> — approximate inference for large, complex networks</li>
+        </ul>
+        <table>
+          <thead>
+            <tr>
+              <th>Aspect</th>
+              <th>Naive Bayes (This App)</th>
+              <th>Full Bayesian Network</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Structure</strong></td>
+              <td>Star topology — all evidence connects directly to hypothesis node</td>
+              <td>Arbitrary DAG — nodes can connect to any other node</td>
+            </tr>
+            <tr>
+              <td><strong>Independence</strong></td>
+              <td>Evidence items assumed conditionally independent</td>
+              <td>Dependencies between variables explicitly modeled</td>
+            </tr>
+            <tr>
+              <td><strong>Computation</strong></td>
+              <td>Very fast — a single pass of multiplications</td>
+              <td>Computationally intensive — requires CPT tables and inference algorithms</td>
+            </tr>
+            <tr>
+              <td><strong>Data Needed</strong></td>
+              <td>Only LR and confidence estimates per evidence item</td>
+              <td>Full Conditional Probability Tables for each node and parent combination</td>
+            </tr>
+            <tr>
+              <td><strong>Infrastructure</strong></td>
+              <td>Runs fully offline in a browser; no server required</td>
+              <td>Typically requires dedicated libraries (e.g., pgmpy, Netica) or server-side compute</td>
+            </tr>
+            <tr>
+              <td><strong>Transparency</strong></td>
+              <td>Every update is traceable and explainable to non-experts</td>
+              <td>Inference steps are often opaque without specialist knowledge</td>
+            </tr>
+            <tr>
+              <td><strong>Best for</strong></td>
+              <td>Field decision support, rapid assessments, resource-constrained environments</td>
+              <td>Academic research, complex causal modeling, machine learning pipelines</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="section">
+        <div class="section-title"><span class="num">12</span> Why Naive Bayes Is Practical for Fieldwork</div>
+        <ul>
+          <li><strong>Fully Offline Operation:</strong> The entire computation runs inside your browser. No internet connection, server, or external library is required — critical for remote or low-connectivity field environments.</li>
+          <li><strong>Low Cognitive Overhead:</strong> Analysts need only two numbers per evidence item — a Likelihood Ratio and a Confidence value — rather than full conditional probability tables with potentially dozens of entries.</li>
+          <li><strong>Empirically Robust:</strong> Despite the independence assumption, Naive Bayes classifiers consistently perform well in practice — even when variables are correlated. The model is more resilient to mild dependency violations than its theoretical limitations might suggest.</li>
+          <li><strong>Transparent Reasoning Chain:</strong> Every evidence item's contribution to the posterior is visible and individually interpretable. The analysis can be fully explained to policymakers, community leaders, or auditors without specialist training.</li>
+          <li><strong>Auditable and Reproducible:</strong> All inputs — prior, LRs, confidence values — are explicit and documented. A colleague can reproduce, challenge, or refine the analysis by adjusting any single parameter.</li>
+          <li><strong>Graceful Handling of Uncertainty:</strong> Through the Confidence parameter, the model explicitly represents the varying quality of real-world field evidence — something many simpler frameworks cannot do.</li>
+        </ul>
+      </div>
+
+    </div><div class="guide-footer">
+      This guide is intended as a reference for analysts using the Bayesian evidence-weighting application. For questions about full Bayesian network modeling, consult a statistician or use a dedicated probabilistic modeling library. Prior selection, Likelihood Ratio assignment, and Confidence calibration are analytical judgments that should be documented and subject to peer review.
+    </div>
+
+  </div></div>
+
+<script>
+(function() {
+'use strict';
+
+// ─── STATE ───────────────────────────────────────────────────────────────────
+let project = { title: 'My Project', author: 'analyst', created: new Date().toISOString().split('T')[0] };
+let hypothesis = { id: 'H1', title: '', description: '', prior: 0.5 };
+let threshold = 0.70;
+let baseEvidence = [];
+let scenarioEvidence = [];
+let cy = null;
+let activeTab = 'sensitivity';
+let scenarioOnlyIds = new Set(); // track scenario-only evidence IDs
+
+// ─── BAYESIAN CORE ───────────────────────────────────────────────────────────
+/**
+ * Bayesian posterior update using confidence-weighted LR.
+ * posterior_odds = prior_odds × ∏(LR_i ^ conf_i)
+ * This is mathematically valid: conf=0 → neutral (LR^0=1), conf=1 → full LR.
+ */
+function computePosterior(prior, evidenceList) {
+  if (prior <= 0) return 0.001;
+  if (prior >= 1) return 0.999;
+  let odds = prior / (1 - prior);
+  for (const e of evidenceList) {
+    const lr = Math.max(0.001, isFinite(e.likelihoodRatio) ? e.likelihoodRatio : 1.0);
+    const conf = Math.min(1, Math.max(0, isFinite(e.confidence) ? e.confidence : 0));
+    const effLR = Math.pow(lr, conf);
+    if (isFinite(effLR) && effLR > 0) odds *= effLR;
+  }
+  if (!isFinite(odds) || isNaN(odds)) return prior;
+  const post = odds / (1 + odds);
+  return Math.min(0.999, Math.max(0.001, post));
+}
+
+/** Effective LR after confidence weighting */
+function effectiveLR(e) {
+  const lr = Math.max(0.001, isFinite(e.likelihoodRatio) ? e.likelihoodRatio : 1.0);
+  const conf = Math.min(1, Math.max(0, isFinite(e.confidence) ? e.confidence : 0));
+  return Math.pow(lr, conf);
+}
+
+/** How much posterior changes when evidence e is removed */
+function computeImpact(prior, evidenceList, excludeId) {
+  const withPost = computePosterior(prior, evidenceList);
+  const withoutPost = computePosterior(prior, evidenceList.filter(e => e.id !== excludeId));
+  return withPost - withoutPost;
+}
+
+/** Posterior without one evidence item */
+function posteriorWithout(prior, evidenceList, excludeId) {
+  return computePosterior(prior, evidenceList.filter(e => e.id !== excludeId));
+}
+
+// ─── INTERPRETATION ──────────────────────────────────────────────────────────
+function qualitativeLabel(p) {
+  if (p < 0.10) return { text: 'Very unlikely', color: '#dc2626' };
+  if (p < 0.25) return { text: 'Unlikely', color: '#e8445a' };
+  if (p < 0.40) return { text: 'Somewhat unlikely', color: '#f97316' };
+  if (p < 0.55) return { text: 'Uncertain', color: '#f59e0b' };
+  if (p < 0.70) return { text: 'Somewhat likely', color: '#0ab7a0' };
+  if (p < 0.85) return { text: 'Likely', color: '#0d9e6e' };
+  if (p < 0.95) return { text: 'Very likely', color: '#059669' };
+  return { text: 'Near certain', color: '#047857' };
+}
+
+function priorQualLabel(p) {
+  if (p < 0.15) return 'Very low prior';
+  if (p < 0.35) return 'Low prior';
+  if (p < 0.45) return 'Moderate-low';
+  if (p < 0.55) return 'Uncertain';
+  if (p < 0.65) return 'Moderate-high';
+  if (p < 0.80) return 'High prior';
+  return 'Very high prior';
+}
+
+function buildInterpretation(prior, basePost, threshold, evidenceList) {
+  const ql = qualitativeLabel(basePost);
+  const change = basePost - prior;
+  const direction = change > 0.01 ? 'increased' : change < -0.01 ? 'decreased' : 'remained stable';
+  const eName = evidenceList.length > 0
+    ? `, particularly due to <strong>${evidenceList.sort((a,b) => Math.abs(computeImpact(prior,[...evidenceList],a.id)) - Math.abs(computeImpact(prior,[...evidenceList],b.id)))[0]?.title || 'current evidence'}</strong>`
+    : '';
+  const threshNote = basePost >= threshold
+    ? `✅ Posterior exceeds decision threshold (${(threshold*100).toFixed(0)}%) — conditions may favour action.`
+    : `⚠️ Posterior is below threshold (${(threshold*100).toFixed(0)}%) — more evidence or investigation recommended before acting.`;
+  return `<strong>${ql.text}</strong> (${(basePost*100).toFixed(1)}%). The probability has ${direction} from the prior of ${(prior*100).toFixed(0)}%${eName}. ${threshNote}`;
+}
+
+// ─── RENDER EVIDENCE CARDS ───────────────────────────────────────────────────
+function renderEvidenceCard(e, isScenario) {
+  const eff = effectiveLR(e);
+  const isSupport = e.likelihoodRatio > 1.05;
+  const isOppose  = e.likelihoodRatio < 0.95;
+  const cardClass = isSupport ? 'ev-support' : isOppose ? 'ev-oppose' : 'ev-neutral';
+  const tagClass  = isSupport ? 'sup' : isOppose ? 'opp' : 'neu';
+  const tagText   = isSupport ? '▲ For' : isOppose ? '▼ Against' : '◆ Neutral';
+
+  const impact    = computeImpact(hypothesis.prior, isScenario ? scenarioEvidence : baseEvidence, e.id);
+  const impactPct = (Math.abs(impact) * 100).toFixed(1);
+  const impactDir = impact >= 0 ? 'pos' : 'neg';
+  const impactBarW= Math.min(50, Math.abs(impact) * 200); // max width 50% from center
+
+  const prefix = isScenario ? 'sc_' : 'ba_';
+  const isScenOnly = isScenario && scenarioOnlyIds.has(e.id);
+
+  return `<div class="ev-card ${cardClass}" id="card-${e.id}">
+    <button class="delete-ev" data-id="${e.id}" data-type="${isScenario ? 'scenario' : 'base'}">✕</button>
+    <div class="ev-card-top">
+      <div>
+        <div class="ev-meta">
+          <input type="text" class="input input-sm flex-1 ev-title-input" value="${esc(e.title)}" placeholder="Evidence title"
+            data-id="${e.id}" data-type="${isScenario ? 'scenario' : 'base'}" style="font-weight:500">
+          <span class="ev-tag ${tagClass}">${tagText}</span>
+          ${isScenOnly ? '<span class="ev-tag" style="background:#f0e6ff;color:#6b21a8">📌 scenario</span>' : ''}
+        </div>
+      </div>
+      <div>
+        <div class="ev-label">Likelihood Ratio</div>
+        <input type="number" class="input input-sm ev-lr-input" step="0.1" min="0.01" max="20"
+          value="${e.likelihoodRatio.toFixed(2)}" data-id="${e.id}" data-type="${isScenario ? 'scenario' : 'base'}">
+      </div>
+      <div>
+        <div class="ev-label">Conf: <span class="conf-badge" id="${prefix}conf-${e.id}">${e.confidence.toFixed(2)}</span></div>
+        <input type="range" min="0" max="1" step="0.01" value="${e.confidence}"
+          class="ev-conf-input" data-id="${e.id}" data-type="${isScenario ? 'scenario' : 'base'}" style="width:100%">
+      </div>
+      <div></div>
+    </div>
+
+    <div class="ev-card-bottom">
+      <div class="impact-bar-wrap">
+        <div class="impact-bar-label">
+          <span>Impact on posterior: <strong>${impact >= 0 ? '+' : ''}${impactPct}%</strong></span>
+          <span class="eff-lr-val">Eff. LR: ${eff.toFixed(3)}</span>
+        </div>
+        <div class="impact-bar-track">
+          <div class="impact-bar-center"></div>
+          <div class="impact-bar-fill ${impactDir}" style="width:${impactBarW}%;${impactDir==='pos'?'left:50%':'right:50%'}"></div>
+        </div>
+      </div>
+      <button class="ev-notes-toggle" data-id="${e.id}">▸ Notes / description</button>
+      <div class="ev-notes" id="notes-${e.id}">
+        <textarea class="input input-sm mt-8 ev-desc-input" rows="2" placeholder="Field notes, source, quality assessment…"
+          data-id="${e.id}" data-type="${isScenario ? 'scenario' : 'base'}">${esc(e.description || '')}</textarea>
+      </div>
+    </div>
+  </div>`;
+}
+
+function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+// ─── RENDER SENSITIVITY TABLE ─────────────────────────────────────────────────
+function renderSensitivity() {
+  const tbody = document.getElementById('sensitivityBody');
+  const empty = document.getElementById('sensitivityEmpty');
+  if (baseEvidence.length === 0) {
+    tbody.innerHTML = '';
+    empty.style.display = 'block';
+    return;
+  }
+  empty.style.display = 'none';
+  const basePost = computePosterior(hypothesis.prior, baseEvidence);
+  // sort by abs impact descending
+  const sorted = [...baseEvidence].sort((a,b) =>
+    Math.abs(computeImpact(hypothesis.prior, baseEvidence, a.id)) - Math.abs(computeImpact(hypothesis.prior, baseEvidence, b.id))
+  ).reverse();
+
+  tbody.innerHTML = sorted.map(e => {
+    const impact = computeImpact(hypothesis.prior, baseEvidence, e.id);
+    const wo = posteriorWithout(hypothesis.prior, baseEvidence, e.id);
+    const eff = effectiveLR(e);
+    const barW = Math.min(80, Math.abs(impact) * 300);
+    const isPos = impact >= 0;
+    return `<tr>
+      <td style="font-size:.82rem;font-weight:500;color:var(--navy)">${esc(e.title)}</td>
+      <td><span style="font-family:var(--mono);font-size:.8rem">${eff.toFixed(3)}</span></td>
+      <td>
+        <div style="display:flex;align-items:center;gap:6px">
+          <div class="impact-mini-bar ${isPos ? 'impact-mini-pos' : 'impact-mini-neg'}" style="width:${barW}px"></div>
+          <span style="font-family:var(--mono);font-size:.78rem;color:${isPos ? 'var(--emerald)' : 'var(--rose)'};font-weight:600">
+            ${impact >= 0 ? '+' : ''}${(impact*100).toFixed(2)}%
+          </span>
+        </div>
+      </td>
+      <td style="font-family:var(--mono);font-size:.78rem;color:var(--muted)">${(wo*100).toFixed(1)}%</td>
+    </tr>`;
+  }).join('');
+}
+
+// ─── RENDER SCENARIO CARDS ───────────────────────────────────────────────────
+function renderScenarioCards() {
+  const list = document.getElementById('scenarioEvidenceList');
+  if (scenarioEvidence.length === 0) {
+    list.innerHTML = '<div style="text-align:center;color:var(--muted);font-size:.82rem;padding:12px 0">No scenario evidence. Reset from base or add scenario-only evidence.</div>';
+    return;
+  }
+  list.innerHTML = scenarioEvidence.map(e => renderEvidenceCard(e, true)).join('');
+  attachCardListeners(list, true);
+}
+
+// ─── UPDATE ALL ──────────────────────────────────────────────────────────────
+function updateAll() {
+  const prior = hypothesis.prior;
+  const basePost = computePosterior(prior, baseEvidence);
+  const scenPost = computePosterior(prior, scenarioEvidence);
+
+  // prior display
+  document.getElementById('priorVal').innerText = prior.toFixed(3);
+  document.getElementById('priorQual').innerText = priorQualLabel(prior);
+  const priorPct = prior * 100;
+  document.getElementById('prior').style.setProperty('--val', priorPct + '%');
+
+  // base posterior
+  document.getElementById('basePosteriorVal').innerText = basePost.toFixed(4);
+  document.getElementById('basePosteriorPct').innerText = '(' + (basePost*100).toFixed(1) + '%)';
+  document.getElementById('basePosteriorBar').style.width = (basePost * 100) + '%';
+  document.getElementById('thresholdLine').style.left = (threshold * 100) + '%';
+
+  // interpretation
+  document.getElementById('interpretationBox').innerHTML = buildInterpretation(prior, basePost, threshold, baseEvidence);
+
+  // threshold status
+  const gap = basePost - threshold;
+  let statusHtml;
+  if (gap >= 0) statusHtml = `<span class="status-dot meet"></span> Threshold met`;
+  else if (gap > -0.1) statusHtml = `<span class="status-dot close"></span> Close to threshold`;
+  else statusHtml = `<span class="status-dot miss"></span> Below threshold`;
+  document.getElementById('thresholdStatus').innerHTML = statusHtml;
+
+  // evidence list
+  const evList = document.getElementById('evidenceList');
+  const emptyEv = document.getElementById('emptyEv');
+  if (baseEvidence.length === 0) {
+    evList.innerHTML = '';
+    emptyEv.style.display = 'block';
+  } else {
+    emptyEv.style.display = 'none';
+    evList.innerHTML = baseEvidence.map(e => renderEvidenceCard(e, false)).join('');
+    attachCardListeners(evList, false);
+  }
+
+  // sensitivity
+  renderSensitivity();
+
+  // scenario compare
+  document.getElementById('sc-prior').innerText = (prior*100).toFixed(1)+'%';
+  document.getElementById('sc-base').innerText = (basePost*100).toFixed(1)+'%';
+  document.getElementById('sc-scen').innerText = (scenPost*100).toFixed(1)+'%';
+  const delta = scenPost - basePost;
+  const deltaEl = document.getElementById('sc-delta');
+  deltaEl.innerText = (delta >= 0 ? '+' : '') + (delta*100).toFixed(2) + '%';
+  deltaEl.className = 'compare-delta ' + (delta > 0.005 ? 'delta-pos' : delta < -0.005 ? 'delta-neg' : 'delta-zero');
+
+  renderScenarioCards();
+  updateGraph();
+  updateStatsChart();
+  saveToLocalStorage();
+}
+
+// ─── ATTACH CARD LISTENERS ───────────────────────────────────────────────────
+function attachCardListeners(container, isScenario) {
+  const target = isScenario ? scenarioEvidence : baseEvidence;
+
+  container.querySelectorAll('.ev-title-input').forEach(inp => inp.addEventListener('input', e => {
+    const ev = target.find(x => x.id === e.target.dataset.id);
+    if (ev) { ev.title = e.target.value; updateAll(); }
+  }));
+
+  container.querySelectorAll('.ev-lr-input').forEach(inp => inp.addEventListener('input', e => {
+    const val = parseFloat(e.target.value);
+    const ev = target.find(x => x.id === e.target.dataset.id);
+    if (ev && val > 0 && isFinite(val)) { ev.likelihoodRatio = val; updateAll(); }
+  }));
+
+  container.querySelectorAll('.ev-conf-input').forEach(inp => inp.addEventListener('input', e => {
+    const val = parseFloat(e.target.value);
+    const ev = target.find(x => x.id === e.target.dataset.id);
+    if (ev) {
+      ev.confidence = val;
+      const prefix = isScenario ? 'sc_' : 'ba_';
+      const span = document.getElementById(`${prefix}conf-${ev.id}`);
+      if (span) span.innerText = val.toFixed(2);
+      updateAll();
+    }
+  }));
+
+  container.querySelectorAll('.ev-desc-input').forEach(inp => inp.addEventListener('input', e => {
+    const ev = target.find(x => x.id === e.target.dataset.id);
+    if (ev) ev.description = e.target.value;
+    saveToLocalStorage();
+  }));
+
+  container.querySelectorAll('.delete-ev').forEach(btn => btn.addEventListener('click', e => {
+    const id = e.target.dataset.id;
+    if (isScenario) {
+      scenarioEvidence = scenarioEvidence.filter(x => x.id !== id);
+      scenarioOnlyIds.delete(id);
+    } else {
+      baseEvidence = baseEvidence.filter(x => x.id !== id);
+    }
+    updateAll();
+  }));
+
+  container.querySelectorAll('.ev-notes-toggle').forEach(btn => btn.addEventListener('click', e => {
+    const id = e.target.dataset.id;
+    const notes = document.getElementById(`notes-${id}`);
+    if (notes) {
+      notes.classList.toggle('open');
+      e.target.innerText = notes.classList.contains('open') ? '▾ Notes / description' : '▸ Notes / description';
+    }
+  }));
+}
+
+// ─── GRAPH ───────────────────────────────────────────────────────────────────
+function updateGraph() {
+  if (!cy) return;
+  const nodes = [{ data: { id: 'hyp', label: (hypothesis.title || 'Hypothesis').substring(0,18), type: 'hyp', conf: 1 } }];
+  const edges = [];
+
+  for (const e of baseEvidence) {
+    const isSupport = e.likelihoodRatio > 1.05;
+    const isOppose  = e.likelihoodRatio < 0.95;
+    const nodeColor = isSupport ? '#0D9E6E' : isOppose ? '#E8445A' : '#F5A623';
+    nodes.push({ data: { id: e.id, label: e.title.substring(0,12), type: 'ev', conf: e.confidence, color: nodeColor } });
+    edges.push({ data: { id: `edge-${e.id}`, source: e.id, target: 'hyp',
+      color: isSupport ? '#0D9E6E' : isOppose ? '#E8445A' : '#F5A623',
+      width: 1 + e.confidence * 4 } });
+  }
+
+  cy.elements().remove();
+  cy.add({ nodes, edges });
+
+  cy.style([
+    { selector: 'node[type = "hyp"]', style: {
+      'background-color': '#1A6CF6', 'width': 65, 'height': 65,
+      'label': 'data(label)', 'color': '#0B2545', 'font-size': '12px',
+      'text-valign': 'bottom', 'text-margin-y': 8, 'font-family': 'Sora, system-ui',
+      'font-weight': 700, 'text-wrap': 'wrap', 'text-max-width': '120px',
+      'text-outline-width': 2, 'text-outline-color': '#FAFCFF' // Agar teks tidak tertimpa garis
+    }},
+    { selector: 'node[type = "ev"]', style: {
+      'background-color': 'data(color)',
+      'width': 'mapData(conf, 0, 1, 30, 50)',
+      'height': 'mapData(conf, 0, 1, 30, 50)',
+      'label': 'data(label)', 'color': '#5E7A94', 'font-size': '10px',
+      'text-valign': 'bottom', 'text-margin-y': 6, 'font-family': 'Sora, system-ui',
+      'font-weight': 600, 'text-wrap': 'wrap', 'text-max-width': '90px',
+      'text-outline-width': 2, 'text-outline-color': '#FAFCFF'
+    }},
+    { selector: 'edge', style: {
+      'width': 'data(width)', 'line-color': '#D0DDED',
+      'target-arrow-shape': 'triangle', 'target-arrow-color': '#D0DDED',
+      'curve-style': 'bezier', 'opacity': 0.8
+    }}
+  ]);
+
+  cy.layout({
+    name: 'breadthfirst',
+    directed: true,
+    padding: 50, // Padding ekstra agar tidak mepet ujung kanvas
+    spacingFactor: 1.5, // Jarak antar node dilebarkan
+    avoidOverlap: true,
+    fit: true // Otomatis fokus/zoom agar pas di tengah
+  }).run();
+}
+
+// ─── CHART STATISTIKA ─────────────────────────────────────────────────────────
+let statsChartInstance = null;
+
+function updateStatsChart() {
+  const ctx = document.getElementById('statsChart');
+  if (!ctx) return;
+
+  const labels = ['Prior (Awal)'];
+  const dataPoints = [hypothesis.prior * 100];
+  let currentOdds = hypothesis.prior / (1 - hypothesis.prior);
+
+  // Hitung posterior secara bertahap setiap bukti masuk
+  baseEvidence.forEach((e, index) => {
+    labels.push(`Evidence ${index + 1}`);
+    const effLR = effectiveLR(e);
+    currentOdds *= effLR;
+    let post = currentOdds / (1 + currentOdds);
+    dataPoints.push(post * 100);
+  });
+
+  if (statsChartInstance) statsChartInstance.destroy();
+
+  statsChartInstance = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: 'Probability Posterior (%)',
+        data: dataPoints,
+        borderColor: '#1A6CF6',
+        backgroundColor: 'rgba(26,108,246,0.1)',
+        borderWidth: 3,
+        pointBackgroundColor: '#0AB7A0',
+        pointRadius: 5,
+        fill: true,
+        tension: 0.4 // Membuat kurva melengkung mulus
+      }]
+    },
+    options: {
+      responsive: true,
+      scales: {
+        y: { min: 0, max: 100, title: { display: true, text: 'Probability (%)' } }
+      },
+      plugins: { legend: { display: false } }
+    }
+  });
+}
+
+
+// ─── LOCALSTORAGE ────────────────────────────────────────────────────────────
+function saveToLocalStorage() {
+  try {
+    localStorage.setItem('bayesianCanvas_v2', JSON.stringify({
+      project, hypothesis, threshold, baseEvidence, scenarioEvidence,
+      scenarioOnlyIds: [...scenarioOnlyIds]
+    }));
+  } catch(e) {}
+}
+
+function loadFromLocalStorage() {
+  try {
+    const saved = localStorage.getItem('bayesianCanvas_v2');
+    if (saved) {
+      const state = JSON.parse(saved);
+      applyState(state);
+    } else {
+      resetToEmpty();
+    }
+  } catch(e) { resetToEmpty(); }
+}
+
+function applyState(state) {
+  if (state.project)  project    = state.project;
+  if (state.hypothesis) hypothesis = state.hypothesis;
+  if (state.threshold !== undefined) threshold = state.threshold;
+  baseEvidence     = state.baseEvidence     || [];
+  scenarioEvidence = state.scenarioEvidence || JSON.parse(JSON.stringify(baseEvidence));
+  scenarioOnlyIds  = new Set(state.scenarioOnlyIds || []);
+  syncHeaderInputs();
+  updateAll();
+}
+
+function syncHeaderInputs() {
+  document.getElementById('projectTitle').value    = project.title    || 'My Project';
+  document.getElementById('projectAuthor').value   = project.author   || 'analyst';
+  document.getElementById('hypothesisTitle').value = hypothesis.title || '';
+  document.getElementById('hypothesisDesc').value  = hypothesis.description || '';
+  document.getElementById('prior').value           = hypothesis.prior || 0.5;
+  document.getElementById('threshold').value       = threshold;
+}
+
+function resetToEmpty() {
+  project    = { title: 'My Project', author: 'analyst', created: new Date().toISOString().split('T')[0] };
+  hypothesis = { id: 'H1', title: '', description: '', prior: 0.5 };
+  threshold  = 0.70;
+  baseEvidence = [];
+  scenarioEvidence = [];
+  scenarioOnlyIds = new Set();
+  syncHeaderInputs();
+  updateAll();
+}
+
+// ─── SAMPLE DATA ─────────────────────────────────────────────────────────────
+function loadSampleData() {
+  project    = { title: 'Evaluasi Infrastruktur Dana Desa Jambi', author: 'Analyst', created: new Date().toISOString().split('T')[0] };
+  hypothesis = { id: 'H1', title: 'Fokus fisik tingkatkan Rasio Gini', description: 'Kebijakan pembangunan Dana Desa yang terlalu berfokus pada infrastruktur fisik secara tidak sengaja meningkatkan ketimpangan (Rasio Gini) warga.', prior: 0.40 };
+  threshold  = 0.75;
+  baseEvidence = [
+    { id: 'e1', title: 'Akses Proyek Elit', likelihoodRatio: 2.5, confidence: 0.85, description: 'Proyek fisik padat modal didominasi/dimenangkan elit desa, bukan swakelola warga miskin' },
+    { id: 'e2', title: 'Data BPS Jambi', likelihoodRatio: 1.8, confidence: 0.90, description: 'Tren Rasio Gini pedesaan naik di wilayah dengan intervensi infrastruktur masif' },
+    { id: 'e3', title: 'Program Padat Karya', likelihoodRatio: 0.6, confidence: 0.70, description: 'Sebagian kecil warga miskin tetap mendapat tambahan upah harian dari proyek jalan' },
+    { id: 'e4', title: 'Lonjakan Harga Tanah', likelihoodRatio: 1.5, confidence: 0.80, description: 'Jalan baru meningkatkan harga aset tak bergerak secara drastis, menguntungkan segelintir tuan tanah' }
+  ];
+  scenarioEvidence = JSON.parse(JSON.stringify(baseEvidence));
+  scenarioOnlyIds = new Set();
+  syncHeaderInputs();
+  updateAll();
+}
+
+// ─── EXPORT FUNCTIONS ────────────────────────────────────────────────────────
+function download(filename, content, mime) {
+  const blob = new Blob([content], { type: mime });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+function exportPDF() {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+  const basePost = computePosterior(hypothesis.prior, baseEvidence);
+  const scenPost = computePosterior(hypothesis.prior, scenarioEvidence);
+  let y = 20;
+
+  doc.setFillColor(11,37,69); doc.rect(0,0,220,38,'F');
+  doc.setTextColor(255,255,255); doc.setFontSize(18); doc.setFont(undefined,'bold');
+  doc.text('Bayesian Analysis Report', 20, 18);
+  doc.setFontSize(9); doc.setFont(undefined,'normal');
+  doc.text('Bayesian Canvas · NGO Field Edition v2', 20, 28);
+  doc.text(`Generated: ${new Date().toLocaleDateString()}`, 140, 28);
+  y = 50;
+
+  doc.setTextColor(11,37,69); doc.setFontSize(13); doc.setFont(undefined,'bold');
+  doc.text('Project', 20, y); y += 7;
+  doc.setFontSize(10); doc.setFont(undefined,'normal');
+  doc.text(`Title: ${project.title}`, 20, y); y += 6;
+  doc.text(`Author: ${project.author}`, 20, y); y += 6;
+  doc.text(`Date: ${project.created}`, 20, y); y += 12;
+
+  doc.setFontSize(13); doc.setFont(undefined,'bold');
+  doc.text('Hypothesis', 20, y); y += 7;
+  doc.setFontSize(10); doc.setFont(undefined,'normal');
+  doc.text(`${hypothesis.title || '(untitled)'}`, 20, y); y += 6;
+  if (hypothesis.description) {
+    const descLines = doc.splitTextToSize(hypothesis.description, 170);
+    doc.text(descLines, 20, y); y += descLines.length * 5 + 4;
+  }
+  doc.text(`Prior probability: ${(hypothesis.prior*100).toFixed(1)}%  |  Decision threshold: ${(threshold*100).toFixed(0)}%`, 20, y); y += 12;
+
+  doc.setFontSize(13); doc.setFont(undefined,'bold');
+  doc.text('Evidence (Base Model)', 20, y); y += 7;
+  doc.setFontSize(9); doc.setFont(undefined,'normal');
+  doc.setFillColor(230,240,255); doc.rect(20,y-4,170,6,'F');
+  doc.setFont(undefined,'bold');
+  doc.text(['#','Title','LR','Conf','Eff.LR','Impact'], [22,28,120,138,152,170].map(x => x), y);
+  doc.setFont(undefined,'normal'); y += 6;
+  baseEvidence.forEach((e,i) => {
+    const impact = computeImpact(hypothesis.prior, baseEvidence, e.id);
+    const eff = effectiveLR(e);
+    const row = [String(i+1), e.title.substring(0,30), e.likelihoodRatio.toFixed(2), e.confidence.toFixed(2), eff.toFixed(3), (impact>=0?'+':'')+(impact*100).toFixed(2)+'%'];
+    doc.text(row, [22,28,120,138,152,168].map(x=>x), y); y += 6;
+    if (y > 265) { doc.addPage(); y = 20; }
+  });
+  y += 6;
+
+  doc.setFontSize(13); doc.setFont(undefined,'bold');
+  doc.text('Results', 20, y); y += 7;
+  doc.setFontSize(11); doc.setFont(undefined,'normal');
+  doc.text(`Base posterior:     ${basePost.toFixed(4)}  (${(basePost*100).toFixed(1)}%)`, 20, y); y += 7;
+  doc.text(`Scenario posterior: ${scenPost.toFixed(4)}  (${(scenPost*100).toFixed(1)}%)`, 20, y); y += 7;
+  const deltaPost = scenPost - basePost;
+  doc.text(`Scenario delta:     ${deltaPost>=0?'+':''}${(deltaPost*100).toFixed(2)}%`, 20, y); y += 7;
+  const ql = qualitativeLabel(basePost);
+  doc.text(`Qualitative assessment: ${ql.text}`, 20, y); y += 7;
+  const meetsThreshold = basePost >= threshold ? 'YES — threshold met' : 'NO — below threshold';
+  doc.text(`Threshold (${(threshold*100).toFixed(0)}%) met: ${meetsThreshold}`, 20, y); y += 14;
+
+  doc.setFontSize(8); doc.setTextColor(100,130,150);
+  doc.text('Report generated by Bayesian Canvas (NGO Field Edition v2) · Bayesian updating formula: posterior_odds = prior_odds × ∏(LR_i^conf_i)', 20, 288);
+  doc.save('bayesian_report.pdf');
+}
+
+function exportCSV() {
+  const lines = [
+    `"Project","${project.title}","${project.author}","${project.created}"`,
+    `"Hypothesis","${hypothesis.title}","${hypothesis.description}"`,
+    `"Prior",${hypothesis.prior}`,
+    `"Threshold",${threshold}`,
+    `"Base Posterior",${computePosterior(hypothesis.prior, baseEvidence).toFixed(6)}`,
+    `"Scenario Posterior",${computePosterior(hypothesis.prior, scenarioEvidence).toFixed(6)}`,
+    ``,
+    `"Evidence ID","Title","Likelihood Ratio","Confidence","Effective LR","Impact on Posterior","Description"`,
+    ...baseEvidence.map(e => `"${e.id}","${e.title}",${e.likelihoodRatio},${e.confidence},${effectiveLR(e).toFixed(4)},${computeImpact(hypothesis.prior,baseEvidence,e.id).toFixed(6)},"${(e.description||'').replace(/"/g,'""')}"`)
+  ];
+  download('bayesian_canvas_data.csv', lines.join('\n'), 'text/csv');
+}
+
+function exportXML() {
+  const basePost = computePosterior(hypothesis.prior, baseEvidence);
+  const dc = `<?xml version="1.0" encoding="UTF-8"?>
+<metadata xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:bc="urn:bayesian-canvas:v2">
+  <dc:title>${esc(project.title)}</dc:title>
+  <dc:creator>${esc(project.author)}</dc:creator>
+  <dc:subject>${esc(hypothesis.title || 'untitled')}</dc:subject>
+  <dc:description>${esc(hypothesis.description || '')} | posterior: ${basePost.toFixed(4)}</dc:description>
+  <dc:date>${project.created || new Date().toISOString().split('T')[0]}</dc:date>
+  <dc:format>application/xml</dc:format>
+  <dc:identifier>urn:uuid:${crypto.randomUUID ? crypto.randomUUID() : 'bc-' + Date.now()}</dc:identifier>
+  <bc:prior>${hypothesis.prior}</bc:prior>
+  <bc:basePosterior>${basePost.toFixed(6)}</bc:basePosterior>
+  <bc:decisionThreshold>${threshold}</bc:decisionThreshold>
+  <bc:evidence>${baseEvidence.map(e => `
+    <bc:item id="${e.id}">
+      <bc:title>${esc(e.title)}</bc:title>
+      <bc:likelihoodRatio>${e.likelihoodRatio}</bc:likelihoodRatio>
+      <bc:confidence>${e.confidence}</bc:confidence>
+      <bc:effectiveLR>${effectiveLR(e).toFixed(4)}</bc:effectiveLR>
+    </bc:item>`).join('')}
+  </bc:evidence>
+</metadata>`;
+  download('metadata_dublin_core.xml', dc, 'application/xml');
+}
+
+// ─── EVENT LISTENERS ─────────────────────────────────────────────────────────
+document.getElementById('hypothesisTitle').addEventListener('input', e => { hypothesis.title = e.target.value; updateAll(); });
+document.getElementById('hypothesisDesc').addEventListener('input', e => { hypothesis.description = e.target.value; updateAll(); });
+document.getElementById('prior').addEventListener('input', e => { hypothesis.prior = parseFloat(e.target.value); updateAll(); });
+document.getElementById('threshold').addEventListener('input', e => { threshold = parseFloat(e.target.value) || 0.7; updateAll(); });
+document.getElementById('projectTitle').addEventListener('input', e => { project.title = e.target.value; updateAll(); });
+document.getElementById('projectAuthor').addEventListener('input', e => { project.author = e.target.value; updateAll(); });
+
+document.getElementById('addEvidence').addEventListener('click', () => {
+  const newId = 'ev_' + Date.now() + '_' + Math.random().toString(36).substr(2,4);
+  baseEvidence.push({ id: newId, title: 'New evidence', likelihoodRatio: 1.2, confidence: 0.6, description: '' });
+  updateAll();
+});
+
+document.getElementById('addScenarioEvidence').addEventListener('click', () => {
+  const newId = 'sc_' + Date.now() + '_' + Math.random().toString(36).substr(2,4);
+  scenarioEvidence.push({ id: newId, title: 'Scenario evidence', likelihoodRatio: 1.2, confidence: 0.6, description: '' });
+  scenarioOnlyIds.add(newId);
+  updateAll();
+});
+
+document.getElementById('resetScenario').addEventListener('click', () => {
+  scenarioEvidence = JSON.parse(JSON.stringify(baseEvidence));
+  scenarioOnlyIds = new Set();
+  updateAll();
+});
+
+// TABS
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    tab.classList.add('active');
+    const id = 'tab-' + tab.dataset.tab;
+    const content = document.getElementById(id);
+    if (content) content.classList.add('active');
+    activeTab = tab.dataset.tab;
+    
+    // PERBAIKAN: Beri jeda 50ms agar div memiliki ukuran sebelum dirender
+    if (activeTab === 'graph') {
+      setTimeout(() => {
+        if (cy) cy.resize();
+        updateGraph();
+      }, 50);
+    }
+    if (activeTab === 'stats') updateStatsChart();
+  });
+});
+
+// SAVE / LOAD
+document.getElementById('newProject').addEventListener('click', () => { if (confirm('Start a new project? Unsaved changes will be lost.')) resetToEmpty(); });
+document.getElementById('saveJSON').addEventListener('click', () => {
+  download('bayesian_canvas.json', JSON.stringify({ project, hypothesis, threshold, baseEvidence, scenarioEvidence, scenarioOnlyIds: [...scenarioOnlyIds] }, null, 2), 'application/json');
+});
+document.getElementById('loadJSON').addEventListener('click', () => document.getElementById('fileInput').click());
+document.getElementById('fileInput').addEventListener('change', e => {
+  const file = e.target.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => { try { applyState(JSON.parse(ev.target.result)); } catch(ex) { alert('Invalid JSON file'); } };
+  reader.readAsText(file);
+  e.target.value = '';
+});
+document.getElementById('exportPDF').addEventListener('click', exportPDF);
+document.getElementById('exportCSV').addEventListener('click', exportCSV);
+document.getElementById('exportXML').addEventListener('click', exportXML);
+document.getElementById('loadSample').addEventListener('click', loadSampleData);
+
+// HELP MODAL
+document.getElementById('btnHelpLR').addEventListener('click', () => document.getElementById('lrModal').classList.add('open'));
+document.getElementById('closeLrModal').addEventListener('click', () => document.getElementById('lrModal').classList.remove('open'));
+document.getElementById('lrModal').addEventListener('click', e => { if (e.target === e.currentTarget) e.currentTarget.classList.remove('open'); });
+
+// GUIDE MODAL (Naive vs Full)
+document.getElementById('btnGuideModal').addEventListener('click', () => document.getElementById('guideModal').classList.add('open'));
+document.getElementById('closeGuideModal').addEventListener('click', () => document.getElementById('guideModal').classList.remove('open'));
+document.getElementById('guideModal').addEventListener('click', e => { if (e.target === e.currentTarget) e.currentTarget.classList.remove('open'); });
+
+// HEADER DATE
+document.getElementById('headerDate').innerText = new Date().toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric' });
+
+// INIT
+window.addEventListener('load', () => {
+  cy = cytoscape({ container: document.getElementById('cy'), elements: [], style: [], layout: { name: 'circle' } });
+  loadFromLocalStorage();
+});
+
+})();
+</script>
+</body>
+</html>
