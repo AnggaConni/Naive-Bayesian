@@ -670,7 +670,7 @@ input:checked + .toggle-slider:before { transform:translateX(16px); }
   </div>
 </div>
 
-<!--  GUIDE MODAL : NAIVE BAYES VS FULL BAYESIAN NETWORK -->
+<!--  GUIDE / GUIDANCE MODAL : NAIVE BAYES VS FULL BAYESIAN NETWORK -->
 
 <div class="modal-overlay" id="guideModal">
   <div class="guide-wrap">
@@ -759,6 +759,14 @@ input:checked + .toggle-slider:before { transform:translateX(16px); }
         </ul>
         <div class="callout warning">
           <strong>Be honest about your prior.</strong> A biased starting point will distort the final posterior regardless of how carefully you calibrate your evidence. When in doubt, use 0.50 and let the evidence speak.
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-title"><span class="num">3.1</span> The Rule of 0 and 1 (Cromwell's Rule)</div>
+        <p>In Bayesian logic, if you set a Prior to exactly <strong>0</strong> or <strong>1</strong>, no amount of evidence can ever change your mind. Multiplying by zero always results in zero.</p>
+        <div class="callout warning">
+          <strong>Never say never:</strong> Always leave a tiny margin for doubt (e.g., 0.01 or 0.99). As a field analyst, assigning 100% certainty to an initial belief is the death of objective reasoning.
         </div>
       </div>
 
@@ -1002,6 +1010,65 @@ input:checked + .toggle-slider:before { transform:translateX(16px); }
           <li><strong>Graceful Handling of Uncertainty:</strong> Through the Confidence parameter, the model explicitly represents the varying quality of real-world field evidence — something many simpler frameworks cannot do.</li>
         </ul>
       </div>
+
+      <div class="section">
+      <div class="section-title"><span class="num">13</span> Guardrails: Detecting Confirmation Bias</div>
+      <p>Human analysts are naturally prone to <strong>Confirmation Bias</strong>—the tendency to only collect evidence that supports our existing worldview. This application monitors the composition of your evidence list in real-time.</p>
+      
+      <h5 class="sub">Triggering a Warning</h5>
+      <ul>
+        <li><strong>Homogeneous Evidence:</strong> If 100% of your items have an LR > 1.0, the system will flag a "Blindspot Warning." It is statistically rare in complex governance environments for <em>no</em> contradictory data to exist.</li>
+        <li><strong>Cluster Over-reliance:</strong> If 80% of the movement in your posterior probability comes from a single cluster (e.g., "Economic Data"), the system warns of a lack of multidimensionality.</li>
+      </ul>
+      
+      <div class="callout success">
+        <strong>Actionable Strategy:</strong> When a bias warning appears, do not simply delete supporting evidence. Instead, spend your next "field hour" specifically looking for "Red Teams" or counter-arguments to your hypothesis.
+      </div>
+    </div>
+
+    <div class="section">
+  <div class="section-title"><span class="num">14</span> The Confidence Matrix: Calibration over Instinct</div>
+  <p>Moving a slider based on "gut feeling" can be hard to defend in a formal audit. The <strong>Confidence Matrix Calculator</strong> (🧮) uses a 3-point triangulation to standardize how evidence quality is scored:</p>
+  
+  <table>
+    <thead>
+      <tr>
+        <th>Dimension</th>
+        <th>Low Score (0.2 - 0.4)</th>
+        <th>High Score (0.8 - 1.0)</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Source Reliability</strong></td>
+        <td>Rumors, unverified social media, single informant.</td>
+        <td>Official registries, institutional data, cross-verified experts.</td>
+      </tr>
+      <tr>
+        <td><strong>Sample/Method</strong></td>
+        <td>Anecdotal observations, tiny sample size, leading questions.</td>
+        <td>Randomized surveys, peer-reviewed methodology, representative samples.</td>
+      </tr>
+      <tr>
+        <td><strong>Recency</strong></td>
+        <td>Data from >2 years ago in a fast-changing environment.</td>
+        <td>Real-time data or very recent site visit (current quarter).</td>
+      </tr>
+    </tbody>
+  </table>
+  
+  <p>By averaging these three scores, you transform a subjective "feeling" into a <strong>methodological assessment</strong> that can be documented in your final report.</p>
+</div>
+
+    <div class="section">
+  <div class="section-title"><span class="num">15</span> Pro-Tip: The Contrast Method for LR</div>
+  <p>Struggling to pick an LR? Use the "Contrast Question":</p>
+  <div class="formula-box">
+    How much more likely is this evidence in a world where the <strong>hypothesis is TRUE</strong>,<br>
+    compared to a world where it is <strong>FALSE</strong>?
+  </div>
+  <p>If you would expect to see this evidence 60% of the time if the claim is true, but only 20% of the time if it's false, your LR is <strong>3.0</strong> (60/20).</p>
+</div>
 
       <div class="guide-contact">
   <h5 class="sub" style="margin-top:0;">Contact & Collaboration</h5>
