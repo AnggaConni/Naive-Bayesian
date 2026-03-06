@@ -55,8 +55,35 @@ body{font-family:var(--sans);background:var(--bg);min-height:100vh;padding:24px 
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
 
 /* ─── MAIN GRID ─── */
-.main-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
-@media(max-width:900px){.main-grid{grid-template-columns:1fr}}
+/* ─── EXECUTIVE DASHBOARD LAYOUT ─── */
+.main-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* Baris Atas: Visual Utama */
+.row-visual {
+  width: 100%;
+}
+
+/* Baris Bawah: 2 Kolom */
+.row-data-grid {
+  display: grid;
+  grid-template-columns: 450px 1fr; /* Kolom kiri (Result) lebih ramping, kanan (Evidence) lebih luas */
+  gap: 24px;
+  align-items: start;
+}
+
+@media(max-width: 1100px) {
+  .row-data-grid { grid-template-columns: 1fr; }
+}
+
+@media(min-width: 1100px) {
+  /* Opsional: Jika layar sangat lebar, Results & Stats tetap satu kolom 
+     tapi Evidence bisa kita buat lebih elegan */
+  #app { padding: 40px 20px; }
+}
 
 /* ─── PANELS ─── */
 .panel{background:var(--surface);border-radius:18px;border:1px solid var(--border);
@@ -109,7 +136,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
 .ev-card.ev-support{border-left:4px solid var(--emerald)}
 .ev-card.ev-oppose{border-left:4px solid var(--rose)}
 .ev-card.ev-neutral{border-left:4px solid var(--amber)}
-.ev-card-top{display:grid;grid-template-columns:1fr 90px 90px 36px;gap:8px;align-items:center}
+.ev-card-top{display:grid;grid-template-columns:1fr 90px 90px 40px;gap:8px;align-items:center}
 .ev-tag{font-size:.7rem;font-weight:600;padding:2px 8px;border-radius:20px;margin-left:6px}
 .ev-tag.sup{background:#d4f5e9;color:#0b6e4d}
 .ev-tag.opp{background:#ffe0e5;color:#b01c2e}
@@ -191,6 +218,23 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
 .delta-neg{color:var(--rose)}
 .delta-zero{color:var(--muted)}
 
+/* ─── SCENARIO TOGGLE BOARD V3 ─── */
+.scen-row { display:flex; align-items:center; justify-content:space-between; background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:10px 14px; margin-bottom:8px; gap:12px; transition:0.2s; }
+.scen-row.disabled { opacity:0.45; background:var(--panel); border-style:dashed; filter:grayscale(100%); }
+.scen-info { flex:1; display:flex; flex-direction:column; gap:4px; }
+.scen-title { font-size:.85rem; font-weight:600; color:var(--navy); }
+.scen-meta { font-size:.7rem; color:var(--muted); display:flex; gap:8px; }
+.scen-controls { display:flex; align-items:center; gap:16px; }
+.scen-slider { width:80px; }
+
+/* Toggle Switch */
+.toggle-switch { position:relative; display:inline-block; width:36px; height:20px; }
+.toggle-switch input { opacity:0; width:0; height:0; }
+.toggle-slider { position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0; background-color:#cbd5e1; transition:.3s; border-radius:20px; }
+.toggle-slider:before { position:absolute; content:""; height:14px; width:14px; left:3px; bottom:3px; background-color:white; transition:.3s; border-radius:50%; box-shadow:0 2px 4px rgba(0,0,0,0.2); }
+input:checked + .toggle-slider { background-color:var(--emerald); }
+input:checked + .toggle-slider:before { transform:translateX(16px); }
+
 /* ─── SENSITIVITY ─── */
 .sensitivity-table{width:100%;border-collapse:collapse;font-size:.82rem;margin-top:8px}
 .sensitivity-table th{text-align:left;color:var(--muted);font-weight:500;font-size:.75rem;
@@ -203,7 +247,15 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
 .impact-mini-neg{background:linear-gradient(90deg,#ff8c98,var(--rose))}
 
 /* ─── GRAPH ─── */
-#cy{width:100%;height:280px;background:#FAFCFF;border-radius:14px;border:1.5px solid var(--border);margin-top:12px}
+#cy {
+  width: 100%;
+  height: 450px; /* Dipertinggi dari 280px */
+  background: #f8fbff;
+  border-radius: 14px;
+  border: 1.5px solid var(--border);
+  margin-top: 12px;
+  box-shadow: inset 0 2px 10px rgba(0,0,0,0.02);
+}
 .graph-legend{display:flex;gap:14px;flex-wrap:wrap;margin-top:8px}
 .legend-item{display:flex;align-items:center;gap:5px;font-size:.72rem;color:var(--muted)}
 .legend-dot{width:10px;height:10px;border-radius:50%}
@@ -454,105 +506,16 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
 <!-- ═══ MAIN GRID ═══ -->
 <div class="main-grid">
 
-  <!-- ── LEFT COLUMN: INPUTS ── -->
-  <div>
-
-    <!-- HYPOTHESIS PANEL -->
+  <div class="row-visual">
     <div class="panel">
-      <div class="panel-head">
-        <div class="panel-title"><div class="icon" style="background:#dbeafe">🎯</div> Hypothesis</div>
-        <button class="btn btn-ghost btn-sm" id="btnHelpLR">📖 What is LR?</button>
-      </div>
-      <input class="input" id="hypothesisTitle" placeholder="e.g., Program will reduce child malnutrition by 20%">
-      <textarea class="input mt-8" id="hypothesisDesc" placeholder="Description / context" rows="2"></textarea>
-
-      <div class="prior-row mt-12">
-        <div class="prior-label">Prior probability</div>
-        <div class="slider-wrap">
-          <input type="range" id="prior" min="0.01" max="0.99" step="0.01" value="0.50">
-        </div>
-        <div class="prior-badge" id="priorVal">0.500</div>
-        <div class="prior-qual" id="priorQual">Uncertain</div>
-      </div>
-
-      <!-- THRESHOLD -->
-      <div class="row mt-12" style="gap:8px">
-        <span style="font-size:.8rem;color:var(--muted);white-space:nowrap">Decision threshold</span>
-        <input class="input input-sm flex-1" type="number" id="threshold" min="0" max="1" step="0.01" value="0.70" style="max-width:80px">
-        <span style="font-size:.75rem;color:var(--muted)">— act if posterior ≥ this</span>
-      </div>
-    </div>
-
-    <!-- EVIDENCE PANEL -->
-    <div class="panel">
-      <div class="panel-head">
-        <div class="panel-title"><div class="icon" style="background:#dcfce7">📋</div> Base Evidence
-          <div class="tooltip-wrap">
-            <div class="help-icon">?</div>
-            <div class="tip">Each evidence item has a Likelihood Ratio (LR) and Confidence. LR > 1 supports the hypothesis; LR < 1 contradicts it. Confidence (0–1) scales the impact.</div>
-          </div>
-        </div>
-        <button class="btn btn-primary btn-sm" id="addEvidence">＋ Add evidence</button>
-      </div>
-      <div id="evidenceList" class="ev-list"></div>
-      <div id="emptyEv" style="text-align:center;color:var(--muted);font-size:.85rem;padding:20px 0;display:none">
-        No evidence yet — click <strong>+ Add evidence</strong> to begin
-      </div>
-    </div>
-
-  </div>
-
-  <!-- ── RIGHT COLUMN: RESULTS ── -->
-  <div>
-
-    <!-- POSTERIOR PANEL -->
-    <div class="panel">
-      <div class="panel-head">
-        <div class="panel-title"><div class="icon" style="background:#fef3c7">📊</div> Results</div>
-        <div id="thresholdStatus" class="threshold-status"></div>
-      </div>
-
-      <div class="posterior-main">
-        <div class="posterior-row">
-          <div class="posterior-val" id="basePosteriorVal">0.5000</div>
-          <div class="posterior-pct" id="basePosteriorPct">(50.0%)</div>
-        </div>
-        <div class="posterior-label">Posterior probability — base model</div>
-        <div class="posterior-bar-wrap mt-12">
-          <div class="posterior-bar-track">
-            <div class="posterior-bar-fill" id="basePosteriorBar" style="width:50%"></div>
-            <div class="threshold-line" id="thresholdLine" style="left:70%"></div>
-          </div>
-          <div style="display:flex;justify-content:space-between;font-size:.7rem;color:rgba(255,255,255,.4);margin-top:4px">
-            <span>0%</span><span style="color:rgba(245,166,35,.6)">▲ threshold</span><span>100%</span>
-          </div>
-        </div>
-        <div class="interpretation-box" id="interpretationBox"></div>
-      </div>
-    </div>
-
-    <!-- TABS: SENSITIVITY / GRAPH -->
-    <div class="panel mt-12">
       <div class="tabs">
-        <button class="tab active" data-tab="sensitivity">📉 Sensitivity</button>
-        <button class="tab" data-tab="graph">🕸️ Evidence graph</button>
-        <button class="tab" data-tab="scenario">🔮 Scenario</button>
-        <button class="tab" data-tab="stats">📈 Statistics</button>
+        <button class="tab active" data-tab="graph">🕸️ Evidence Graph</button>
+        <button class="tab" data-tab="stats">📈 Statistics Trend</button>
+        <button class="tab" data-tab="sensitivity">📉 Sensitivity</button>
+        <button class="tab" data-tab="scenario">🔮 What-If Sandbox</button>
       </div>
 
-      <!-- SENSITIVITY TAB -->
-      <div class="tab-content active" id="tab-sensitivity">
-        <div class="section-title">Impact of each evidence on posterior</div>
-        <p style="font-size:.78rem;color:var(--muted);margin-bottom:10px">Shows how much each piece of evidence moves the posterior. Green = supports hypothesis, Red = weakens it.</p>
-        <table class="sensitivity-table" id="sensitivityTable">
-          <thead><tr><th>Evidence</th><th>Eff. LR</th><th>Impact</th><th>Without</th></tr></thead>
-          <tbody id="sensitivityBody"></tbody>
-        </table>
-        <div id="sensitivityEmpty" style="text-align:center;color:var(--muted);font-size:.82rem;padding:16px 0;display:none">Add evidence to see sensitivity analysis</div>
-      </div>
-
-      <!-- GRAPH TAB -->
-      <div class="tab-content" id="tab-graph">
+      <div class="tab-content active" id="tab-graph">
         <div id="cy"></div>
         <div class="graph-legend mt-8">
           <div class="legend-item"><div class="legend-dot" style="background:var(--blue)"></div> Hypothesis</div>
@@ -562,47 +525,103 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
         </div>
       </div>
 
-      <!-- SCENARIO TAB -->
+      <div class="tab-content" id="tab-stats">
+        <div style="font-size:.82rem;color:var(--muted);margin-bottom:12px">Sequential update trend based on evidence order.</div>
+        <div style="background:#fff; border:1px solid var(--border); border-radius:12px; padding:16px;">
+          <canvas id="statsChart" width="400" height="150"></canvas>
+        </div>
+      </div>
+
+      <div class="tab-content" id="tab-sensitivity">
+        <div class="row" style="justify-content:space-between; margin-bottom:12px;">
+          <div class="section-title">Impact & Sensitivity Analysis</div>
+          <button class="btn btn-ghost btn-sm" id="btnStressTest">🌩️ Run Stress Test</button>
+        </div>
+        <div id="stressTestWarning" style="display:none; padding:12px; border-radius:10px; font-size:.82rem; margin-bottom:14px;"></div>
+        <table class="sensitivity-table" id="sensitivityTable">
+          <thead><tr><th>Evidence</th><th>Eff. LR</th><th>Impact</th><th>Without</th></tr></thead>
+          <tbody id="sensitivityBody"></tbody>
+        </table>
+        <div id="sensitivityEmpty" style="text-align:center;color:var(--muted);font-size:.82rem;padding:16px 0;">Add evidence to see analysis</div>
+      </div>
+
       <div class="tab-content" id="tab-scenario">
         <div class="row" style="justify-content:space-between;margin-bottom:12px">
           <div style="font-size:.82rem;color:var(--muted)">Adjust evidence weights without changing base model.</div>
           <button class="btn btn-ghost btn-sm" id="resetScenario">↻ Reset from base</button>
         </div>
-
         <div class="scenario-compare">
-          <div class="compare-card">
-            <div class="compare-label">Prior</div>
-            <div class="compare-val" id="sc-prior">—</div>
-          </div>
-          <div class="compare-card">
-            <div class="compare-label">Base posterior</div>
-            <div class="compare-val" id="sc-base">—</div>
-          </div>
-          <div class="compare-card">
-            <div class="compare-label">Scenario posterior</div>
-            <div class="compare-val" id="sc-scen">—</div>
-            <div class="compare-delta" id="sc-delta">—</div>
-          </div>
+          <div class="compare-card"><div class="compare-label">Prior</div><div class="compare-val" id="sc-prior">—</div></div>
+          <div class="compare-card"><div class="compare-label">Base</div><div class="compare-val" id="sc-base">—</div></div>
+          <div class="compare-card"><div class="compare-label">Scenario</div><div class="compare-val" id="sc-scen">—</div><div class="compare-delta" id="sc-delta">—</div></div>
         </div>
-
         <div id="scenarioEvidenceList" class="ev-list mt-12"></div>
-        <div style="font-size:.75rem;color:var(--muted);margin-top:8px">💡 Tip: Add scenario-only evidence using the button below</div>
-        <button class="btn btn-ghost btn-sm mt-8" id="addScenarioEvidence">＋ Add scenario-only evidence</button>
+        <button class="btn btn-ghost btn-sm mt-12" id="addScenarioEvidence">＋ Add scenario-only evidence</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="row-data-grid">
+
+    <div class="col-left">
+      <div class="panel">
+        <div class="panel-head">
+          <div class="panel-title"><div class="icon" style="background:#dbeafe">🎯</div> Hypothesis</div>
+          <button class="btn btn-ghost btn-sm" id="btnHelpLR">📖 Help</button>
+        </div>
+        <input class="input" id="hypothesisTitle" placeholder="The main claim...">
+        <textarea class="input mt-8" id="hypothesisDesc" placeholder="Context..." rows="1"></textarea>
+        <div class="prior-row mt-12">
+          <div class="prior-label">Prior</div>
+          <div class="slider-wrap"><input type="range" id="prior" min="0.01" max="0.99" step="0.01" value="0.50"></div>
+          <div class="prior-badge" id="priorVal">0.500</div>
+          <div class="prior-qual" id="priorQual">Uncertain</div> 
+        </div>
+        <div class="row mt-12">
+          <span style="font-size:.75rem;color:var(--muted)">Threshold:</span>
+          <input class="input input-sm flex-1" type="number" id="threshold" value="0.70" style="max-width:70px">
+        </div>
+        <div style="font-size:.72rem; color:var(--muted); margin-top:4px; margin-left:4px;">— act if posterior ≥ this</div>
       </div>
 
-      <div class="tab-content" id="tab-stats">
-  <div class="row" style="justify-content:space-between;margin-bottom:12px">
-    <div style="font-size:.82rem;color:var(--muted)">The development of probability each time field evidence is entered (Sequential Updating).</div>
-  </div>
-  <div style="background:#fff; border:1px solid var(--border); border-radius:12px; padding:16px;">
-    <canvas id="statsChart" width="400" height="180"></canvas>
-  </div>
-</div>
-
+      <div class="panel" style="background: var(--navy); color: white; margin-top: 16px;">
+        <div class="panel-head">
+          <div class="panel-title" style="color:white">📊 Results</div>
+          <div id="thresholdStatus"></div>
+        </div>
+        <div class="posterior-row">
+          <div class="posterior-val" id="basePosteriorVal">0.5000</div>
+          <div class="posterior-pct" id="basePosteriorPct">(50.0%)</div>
+        </div>
+        <div class="posterior-bar-wrap mt-8">
+          <div class="posterior-bar-track">
+            <div class="posterior-bar-fill" id="basePosteriorBar" style="width:50%"></div>
+            <div class="threshold-line" id="thresholdLine" style="left:70%"></div>
+          </div>
+        </div>
+        <div class="interpretation-box mt-12" id="interpretationBox" style="color:var(--navy)"></div>
+        <div id="biasWarning" style="display:none; padding:10px; border-radius:8px; font-size:.75rem; margin-top:10px;"></div>
+        <div id="analystSummaryBox" style="display:none; margin-top:12px; border-top:1px solid rgba(255,255,255,0.1); padding-top:12px;">
+          <div style="font-size:0.7rem; opacity:0.6; text-transform:uppercase; margin-bottom:6px;">Top Drivers</div>
+          <div id="analystSummaryContent" style="font-size:0.8rem;"></div>
+        </div>
+      </div>
     </div>
 
-  </div>
-</div>
+    <div class="col-right">
+      <div class="panel">
+        <div class="panel-head">
+          <div class="panel-title"><div class="icon" style="background:#dcfce7">📋</div> Base Evidence</div>
+          <button class="btn btn-primary btn-sm" id="addEvidence">＋ Add Evidence</button>
+        </div>
+        <div id="evidenceList" class="ev-list"></div>
+        <div id="emptyEv" style="text-align:center;color:var(--muted);font-size:.85rem;padding:40px 0;">
+          No evidence yet.
+        </div>
+      </div>
+    </div>
+
+  </div> </div>
 
 <!-- ═══ ACTION BAR ═══ -->
 <div class="action-bar">
@@ -617,10 +636,11 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
   <button class="btn btn-ghost" id="exportCSV">📊 Export CSV</button>
   <div class="action-divider"></div>
   <button class="btn btn-sample" id="loadSample">🧪 Load sample</button>
-  <button class="btn btn-ghost" id="btnGuideModal">💡 Guide: Naive vs Full Bayes</button> <div style="margin-left:auto;font-size:.72rem;color:var(--muted)">All data stays in your browser · autosaved locally</div>
+  <button class="btn btn-ghost" id="btnGuideModal">💡 Guide: How-To</button>
+  <div style="margin-left:auto; font-size:.72rem; color:var(--muted)">All data stays in your browser · autosaved locally</div>
 </div>
-  <div style="margin-left:auto;font-size:.72rem;color:var(--muted)">All data stays in your browser · autosaved locally</div>
-</div>
+
+<!-- Removed empty div for valid HTML structure -->
 
 </div><!-- /app -->
 
@@ -1022,6 +1042,8 @@ let scenarioEvidence = [];
 let cy = null;
 let activeTab = 'sensitivity';
 let scenarioOnlyIds = new Set(); // track scenario-only evidence IDs
+let currentConfidenceEvidenceId = null;
+let currentConfidenceIsScenario = false;
 
 // ─── BAYESIAN CORE ───────────────────────────────────────────────────────────
 /**
@@ -1034,6 +1056,7 @@ function computePosterior(prior, evidenceList) {
   if (prior >= 1) return 0.999;
   let odds = prior / (1 - prior);
   for (const e of evidenceList) {
+    if (e.disabled) continue; // <--- BARIS BARU: Abaikan jika di-toggle OFF
     const lr = Math.max(0.001, isFinite(e.likelihoodRatio) ? e.likelihoodRatio : 1.0);
     const conf = Math.min(1, Math.max(0, isFinite(e.confidence) ? e.confidence : 0));
     const effLR = Math.pow(lr, conf);
@@ -1098,6 +1121,61 @@ function buildInterpretation(prior, basePost, threshold, evidenceList) {
   return `<strong>${ql.text}</strong> (${(basePost*100).toFixed(1)}%). The probability has ${direction} from the prior of ${(prior*100).toFixed(0)}%${eName}. ${threshNote}`;
 }
 
+// ─── ANALYST SUMMARY V3 ──────────────────────────────────────────────────────
+function renderAnalystSummary(prior, evidenceList) {
+  const summaryBox = document.getElementById('analystSummaryBox');
+  const summaryContent = document.getElementById('analystSummaryContent');
+  
+  if (evidenceList.length === 0) {
+    summaryBox.style.display = 'none';
+    return;
+  }
+  
+  summaryBox.style.display = 'block';
+
+  // Urutkan berdasarkan dampak absolut tertinggi, ambil 3 teratas
+  const sorted = [...evidenceList].sort((a,b) => 
+    Math.abs(computeImpact(prior, evidenceList, b.id)) - Math.abs(computeImpact(prior, evidenceList, a.id))
+  ).slice(0, 3);
+
+  let html = '';
+  sorted.forEach((e, idx) => {
+    const impact = computeImpact(prior, evidenceList, e.id);
+    const impactStr = (impact >= 0 ? '+' : '') + (impact * 100).toFixed(1) + '%';
+    const color = impact >= 0 ? '#4ade80' : '#f87171'; // Hijau atau Merah
+    html += `<div style="display:flex; justify-content:space-between; margin-bottom:4px; border-bottom:1px dashed rgba(255,255,255,0.1); padding-bottom:4px;">
+      <span style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; padding-right:10px;">${idx+1}. ${esc(e.title)}</span>
+      <span style="color:${color}; font-family:var(--mono); font-weight:500;">${impactStr}</span>
+    </div>`;
+  });
+  summaryContent.innerHTML = html;
+}
+
+// ─── CLUSTERING V3 ───────────────────────────────────────────────────────────
+function renderGroupedEvidence(evidenceArray, isScenario) {
+  if (evidenceArray.length === 0) return '';
+  const grouped = {};
+  
+  // Kelompokkan data berdasarkan properti 'cluster'
+  evidenceArray.forEach(e => {
+    const c = e.cluster || 'General';
+    if (!grouped[c]) grouped[c] = [];
+    grouped[c].push(e);
+  });
+
+  let html = '';
+  for (const c in grouped) {
+    // Header Klaster dengan garis batas (separator)
+    html += `<div style="margin-top:16px; margin-bottom:8px; display:flex; align-items:center; gap:8px;">
+               <div style="font-size:.72rem; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.08em;">📁 ${esc(c)}</div>
+               <div style="flex:1; height:1px; background:var(--border);"></div>
+             </div>`;
+    // Render kartu di dalam klaster tersebut
+    html += grouped[c].map(e => renderEvidenceCard(e, isScenario)).join('');
+  }
+  return html;
+}
+
 // ─── RENDER EVIDENCE CARDS ───────────────────────────────────────────────────
 function renderEvidenceCard(e, isScenario) {
   const eff = effectiveLR(e);
@@ -1105,7 +1183,7 @@ function renderEvidenceCard(e, isScenario) {
   const isOppose  = e.likelihoodRatio < 0.95;
   const cardClass = isSupport ? 'ev-support' : isOppose ? 'ev-oppose' : 'ev-neutral';
   const tagClass  = isSupport ? 'sup' : isOppose ? 'opp' : 'neu';
-  const tagText   = isSupport ? '▲ For' : isOppose ? '▼ Against' : '◆ Neutral';
+  const tagText   = getLRLabel(e.likelihoodRatio);
 
   const impact    = computeImpact(hypothesis.prior, isScenario ? scenarioEvidence : baseEvidence, e.id);
   const impactPct = (Math.abs(impact) * 100).toFixed(1);
@@ -1120,8 +1198,8 @@ function renderEvidenceCard(e, isScenario) {
     <div class="ev-card-top">
       <div>
         <div class="ev-meta">
-          <input type="text" class="input input-sm flex-1 ev-title-input" value="${esc(e.title)}" placeholder="Evidence title"
-            data-id="${e.id}" data-type="${isScenario ? 'scenario' : 'base'}" style="font-weight:500">
+          <input type="text" class="input input-sm flex-1 ev-title-input" value="${esc(e.title)}" placeholder="Evidence title" data-id="${e.id}" data-type="${isScenario ? 'scenario' : 'base'}" style="font-weight:500">
+          <input type="text" class="input input-sm ev-cluster-input" value="${esc(e.cluster || 'General')}" placeholder="Cluster" data-id="${e.id}" data-type="${isScenario ? 'scenario' : 'base'}" style="max-width:90px; font-size:10px; padding:3px 6px; background:rgba(0,0,0,0.03); border:none; border-bottom:1px solid var(--border); border-radius:4px 4px 0 0;">
           <span class="ev-tag ${tagClass}">${tagText}</span>
           ${isScenOnly ? '<span class="ev-tag" style="background:#f0e6ff;color:#6b21a8">📌 scenario</span>' : ''}
         </div>
@@ -1136,7 +1214,9 @@ function renderEvidenceCard(e, isScenario) {
         <input type="range" min="0" max="1" step="0.01" value="${e.confidence}"
           class="ev-conf-input" data-id="${e.id}" data-type="${isScenario ? 'scenario' : 'base'}" style="width:100%">
       </div>
-      <div></div>
+      <div style="text-align:right;">
+  <button class="btn-conf-calc" data-id="${e.id}" style="background:none; border:none; font-size:1.2rem; cursor:pointer; padding:2px;" title="Confidence Matrix">🧮</button>
+</div>
     </div>
 
     <div class="ev-card-bottom">
@@ -1160,6 +1240,18 @@ function renderEvidenceCard(e, isScenario) {
 }
 
 function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+
+/** Convert LR to Human Readable Semantic Label (V3 Feature) */
+function getLRLabel(lr) {
+  if (lr >= 5.0) return '▲ Strong Support';
+  if (lr >= 2.0) return '▲ Moderate Support';
+  if (lr > 1.05) return '▲ Weak Support';
+  if (lr <= 0.2) return '▼ Strong Against';
+  if (lr <= 0.5) return '▼ Moderate Against';
+  if (lr < 0.95) return '▼ Weak Against';
+  return '◆ Neutral';
+}
 
 // ─── RENDER SENSITIVITY TABLE ─────────────────────────────────────────────────
 function renderSensitivity() {
@@ -1199,15 +1291,118 @@ function renderSensitivity() {
   }).join('');
 }
 
+function detectBias(prior, evidenceList) {
+  if (evidenceList.length < 3) return null;
+
+  const supporting = evidenceList.filter(e => e.likelihoodRatio > 1.05).length;
+  const against = evidenceList.filter(e => e.likelihoodRatio < 0.95).length;
+  const total = evidenceList.length;
+
+  if (supporting === total) {
+    return { 
+      msg: "⚠️ <strong>Bias Alert:</strong> 100% bukti bersifat mendukung. Pertimbangkan mencari data yang kontradiktif untuk objektivitas.",
+      type: "warning" 
+    };
+  }
+  if (supporting / total > 0.8) {
+    return { 
+      msg: "🔍 <strong>Tip:</strong> Analisis sangat condong ke arah 'For'. Coba validasi ulang klaster yang paling lemah.",
+      type: "info" 
+    };
+  }
+  return null;
+}
+
+// ─── BIAS DETECTOR ─────────────────────────────────────────────────
+
+  // ─── BIAS DETECTOR V3 ────────────────────────────────────────────────────────
+function updateBiasDetector(evidenceList) {
+  const biasBox = document.getElementById('biasWarning');
+  if (evidenceList.length < 3) { // Deteksi baru aktif jika minimal ada 3 bukti
+    biasBox.style.display = 'none';
+    return;
+  }
+
+  const supporting = evidenceList.filter(e => e.likelihoodRatio > 1.05).length;
+  const against = evidenceList.filter(e => e.likelihoodRatio < 0.95).length;
+  const total = evidenceList.length;
+  const ratio = supporting / total;
+
+  let content = "";
+  let style = "";
+
+  if (ratio === 1) {
+    content = "⚠️ <strong>Confirmation Bias Alert:</strong> 100% dari bukti Anda bersifat mendukung hipotesis. Sebagai analis, pastikan Anda tidak melewatkan bukti yang kontradiktif demi objektivitas laporan.";
+    style = "background: #fffbeb; border-color: #fef3c7; color: #92400e; border-left: 4px solid #f59e0b;";
+  } else if (ratio >= 0.8) {
+    content = "🔍 <strong>Analytic Tip:</strong> Analisis Anda sangat condong ke arah 'Mendukung' (>80%). Coba tantang kesimpulan ini dengan mencari skenario terburuk atau <em>counter-evidence</em>.";
+    style = "background: #eff6ff; border-color: #dbeafe; color: #1e40af; border-left: 4px solid #3b82f6;";
+  }
+
+  if (content) {
+    biasBox.innerHTML = content;
+    biasBox.style.cssText += style; // Tambahkan style yang sesuai
+    biasBox.style.display = 'block';
+  } else {
+    biasBox.style.display = 'none';
+  }
+}
+
 // ─── RENDER SCENARIO CARDS ───────────────────────────────────────────────────
+// ─── SCENARIO SANDBOX V3 ─────────────────────────────────────────────────────
 function renderScenarioCards() {
   const list = document.getElementById('scenarioEvidenceList');
   if (scenarioEvidence.length === 0) {
-    list.innerHTML = '<div style="text-align:center;color:var(--muted);font-size:.82rem;padding:12px 0">No scenario evidence. Reset from base or add scenario-only evidence.</div>';
+    list.innerHTML = '<div style="text-align:center;color:var(--muted);font-size:.82rem;padding:12px 0">No scenario evidence available.</div>';
     return;
   }
-  list.innerHTML = scenarioEvidence.map(e => renderEvidenceCard(e, true)).join('');
-  attachCardListeners(list, true);
+
+  let html = '<div style="font-size:.72rem; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.08em; margin-bottom:10px;">🧪 What-If Sandbox</div>';
+  
+  scenarioEvidence.forEach(e => {
+    const isOff = e.disabled;
+    const eff = effectiveLR(e);
+    html += `
+    <div class="scen-row ${isOff ? 'disabled' : ''}">
+      <div class="scen-info">
+        <div class="scen-title">${esc(e.title)}</div>
+        <div class="scen-meta">
+          <span>Orig LR: <strong>${e.likelihoodRatio.toFixed(2)}</strong></span>
+          <span>Eff. LR: <strong>${eff.toFixed(3)}</strong></span>
+        </div>
+      </div>
+      <div class="scen-controls">
+        <div style="text-align:center;">
+          <div style="font-size:.65rem; color:var(--muted); margin-bottom:2px; font-weight:600;">Conf: <span id="sc_confval_${e.id}" style="color:var(--navy)">${e.confidence.toFixed(2)}</span></div>
+          <input type="range" min="0" max="1" step="0.01" value="${e.confidence}" class="scen-slider" data-id="${e.id}" ${isOff ? 'disabled' : ''}>
+        </div>
+        <label class="toggle-switch" title="Toggle Evidence On/Off">
+          <input type="checkbox" class="scen-toggle" data-id="${e.id}" ${!isOff ? 'checked' : ''}>
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+    </div>`;
+  });
+  
+  list.innerHTML = html;
+  
+  // Event Listeners khusus untuk Scenario Sandbox
+  list.querySelectorAll('.scen-toggle').forEach(chk => chk.addEventListener('change', e => {
+    const ev = scenarioEvidence.find(x => x.id === e.target.dataset.id);
+    if (ev) {
+      ev.disabled = !e.target.checked;
+      updateAll(); 
+    }
+  }));
+
+  list.querySelectorAll('.scen-slider').forEach(rng => rng.addEventListener('input', e => {
+    const ev = scenarioEvidence.find(x => x.id === e.target.dataset.id);
+    if (ev) {
+      ev.confidence = parseFloat(e.target.value);
+      document.getElementById(`sc_confval_${ev.id}`).innerText = ev.confidence.toFixed(2);
+      updateAll();
+    }
+  }));
 }
 
 // ─── UPDATE ALL ──────────────────────────────────────────────────────────────
@@ -1230,6 +1425,7 @@ function updateAll() {
 
   // interpretation
   document.getElementById('interpretationBox').innerHTML = buildInterpretation(prior, basePost, threshold, baseEvidence);
+  renderAnalystSummary(prior, baseEvidence);
 
   // threshold status
   const gap = basePost - threshold;
@@ -1247,7 +1443,7 @@ function updateAll() {
     emptyEv.style.display = 'block';
   } else {
     emptyEv.style.display = 'none';
-    evList.innerHTML = baseEvidence.map(e => renderEvidenceCard(e, false)).join('');
+    evList.innerHTML = renderGroupedEvidence(baseEvidence, false); // <--- INI YANG BERUBAH
     attachCardListeners(evList, false);
   }
 
@@ -1267,6 +1463,7 @@ function updateAll() {
   updateGraph();
   updateStatsChart();
   saveToLocalStorage();
+  updateBiasDetector(baseEvidence);
 }
 
 // ─── ATTACH CARD LISTENERS ───────────────────────────────────────────────────
@@ -1276,6 +1473,11 @@ function attachCardListeners(container, isScenario) {
   container.querySelectorAll('.ev-title-input').forEach(inp => inp.addEventListener('input', e => {
     const ev = target.find(x => x.id === e.target.dataset.id);
     if (ev) { ev.title = e.target.value; updateAll(); }
+  }));
+
+  container.querySelectorAll('.ev-cluster-input').forEach(inp => inp.addEventListener('change', e => {
+    const ev = target.find(x => x.id === e.target.dataset.id);
+    if (ev) { ev.cluster = e.target.value || 'General'; updateAll(); }
   }));
 
   container.querySelectorAll('.ev-lr-input').forEach(inp => inp.addEventListener('input', e => {
@@ -1321,22 +1523,71 @@ function attachCardListeners(container, isScenario) {
       e.target.innerText = notes.classList.contains('open') ? '▾ Notes / description' : '▸ Notes / description';
     }
   }));
+  container.querySelectorAll('.btn-conf-calc').forEach(btn => {
+  btn.addEventListener('click', e => {
+    e.stopPropagation();
+    const id = btn.dataset.id;
+    const ev = target.find(x => x.id === id);
+    if (!ev) return;
+    currentConfidenceEvidenceId = id;
+    currentConfidenceIsScenario = isScenario;
+    // Reset sliders ke 0.5 (bisa juga diisi dengan nilai confidence saat ini, tapi biar netral)
+    document.getElementById('confSource').value = 0.5;
+    document.getElementById('confMethod').value = 0.5;
+    document.getElementById('confRecency').value = 0.5;
+    document.getElementById('confSourceVal').innerText = '0.50';
+    document.getElementById('confMethodVal').innerText = '0.50';
+    document.getElementById('confRecencyVal').innerText = '0.50';
+    document.getElementById('confMatrixModal').classList.add('open');
+  });
+});
 }
 
 // ─── GRAPH ───────────────────────────────────────────────────────────────────
+// ─── GRAPH V3 (COMPOUND NODES) ───────────────────────────────────────────────
 function updateGraph() {
   if (!cy) return;
   const nodes = [{ data: { id: 'hyp', label: (hypothesis.title || 'Hypothesis').substring(0,18), type: 'hyp', conf: 1 } }];
   const edges = [];
 
+  // 1. Ekstrak nama-nama klaster unik
+  const clusters = new Set();
+  for (const e of baseEvidence) {
+    clusters.add(e.cluster || 'General');
+  }
+
+  // 2. Buat "Parent Node" (Kotak Klaster)
+  clusters.forEach(c => {
+    nodes.push({ data: { id: `cluster_${c}`, label: c, type: 'cluster' } });
+  });
+
+  // 3. Masukkan Evidence ke dalam Parent Node masing-masing
   for (const e of baseEvidence) {
     const isSupport = e.likelihoodRatio > 1.05;
     const isOppose  = e.likelihoodRatio < 0.95;
     const nodeColor = isSupport ? '#0D9E6E' : isOppose ? '#E8445A' : '#F5A623';
-    nodes.push({ data: { id: e.id, label: e.title.substring(0,12), type: 'ev', conf: e.confidence, color: nodeColor } });
-    edges.push({ data: { id: `edge-${e.id}`, source: e.id, target: 'hyp',
-      color: isSupport ? '#0D9E6E' : isOppose ? '#E8445A' : '#F5A623',
-      width: 1 + e.confidence * 4 } });
+    const parentId  = `cluster_${e.cluster || 'General'}`;
+
+    nodes.push({ 
+      data: { 
+        id: e.id, 
+        parent: parentId, // <--- Ini yang membuat node masuk ke dalam kotak
+        label: e.title.substring(0,12), 
+        type: 'ev', 
+        conf: e.confidence, 
+        color: nodeColor 
+      } 
+    });
+
+    edges.push({ 
+      data: { 
+        id: `edge-${e.id}`, 
+        source: e.id, 
+        target: 'hyp',
+        color: nodeColor, // Warna garis panah disamakan dengan warna node
+        width: 1 + e.confidence * 4 
+      } 
+    });
   }
 
   cy.elements().remove();
@@ -1348,31 +1599,56 @@ function updateGraph() {
       'label': 'data(label)', 'color': '#0B2545', 'font-size': '12px',
       'text-valign': 'bottom', 'text-margin-y': 8, 'font-family': 'Sora, system-ui',
       'font-weight': 700, 'text-wrap': 'wrap', 'text-max-width': '120px',
-      'text-outline-width': 2, 'text-outline-color': '#FAFCFF' // Agar teks tidak tertimpa garis
+      'text-outline-width': 2, 'text-outline-color': '#FAFCFF',
+      'z-index': 10
+    }},
+    { selector: 'node[type = "cluster"]', style: { // <--- Styling Kotak Klaster
+      'background-color': 'rgba(235, 243, 255, 0.4)',
+      'border-width': 1.5,
+      'border-color': '#b0c8e8',
+      'border-style': 'dashed',
+      'label': 'data(label)',
+      'color': '#5E7A94',
+      'font-size': '10px',
+      'font-weight': 700,
+      'text-valign': 'top',
+      'text-halign': 'center',
+      'text-margin-y': -6,
+      'text-transform': 'uppercase',
+      'padding': 14
     }},
     { selector: 'node[type = "ev"]', style: {
       'background-color': 'data(color)',
-      'width': 'mapData(conf, 0, 1, 30, 50)',
-      'height': 'mapData(conf, 0, 1, 30, 50)',
+      'width': 'mapData(conf, 0, 1, 25, 45)',
+      'height': 'mapData(conf, 0, 1, 25, 45)',
       'label': 'data(label)', 'color': '#5E7A94', 'font-size': '10px',
       'text-valign': 'bottom', 'text-margin-y': 6, 'font-family': 'Sora, system-ui',
       'font-weight': 600, 'text-wrap': 'wrap', 'text-max-width': '90px',
       'text-outline-width': 2, 'text-outline-color': '#FAFCFF'
     }},
     { selector: 'edge', style: {
-      'width': 'data(width)', 'line-color': '#D0DDED',
-      'target-arrow-shape': 'triangle', 'target-arrow-color': '#D0DDED',
-      'curve-style': 'bezier', 'opacity': 0.8
+      'width': 'data(width)', 'line-color': 'data(color)',
+      'target-arrow-shape': 'triangle', 'target-arrow-color': 'data(color)',
+      'curve-style': 'bezier', 'opacity': 0.45
     }}
   ]);
 
-  cy.layout({
-    name: 'breadthfirst',
-    directed: true,
-    padding: 50, // Padding ekstra agar tidak mepet ujung kanvas
-    spacingFactor: 1.5, // Jarak antar node dilebarkan
-    avoidOverlap: true,
-    fit: true // Otomatis fokus/zoom agar pas di tengah
+  // Layout COSE sangat bagus untuk simulasi Node di dalam Node
+cy.layout({
+    name: 'cose',
+    padding: 60,                // Ruang kosong di pinggir kanvas
+    nodeOverlap: 20,            // Minimalisasi tumpang tindih
+    componentSpacing: 100,      // Jarak antar klaster
+    nodeRepulsion: 800000,      // Gaya tolak-menolak diperkuat agar menyebar
+    idealEdgeLength: 120,       // Panjang panah yang ideal
+    edgeElasticity: 100,
+    nestingFactor: 1.2,         // Mengatur kerapatan node di dalam kotak klaster
+    gravity: 1,                 // Tarikan ke tengah dikurangi agar menyebar ke seluruh kanvas
+    numIter: 1000,
+    initialTemp: 1000,
+    coolingFactor: 0.99,
+    animate: true,
+    fit: true                   // Otomatis pas ke layar
   }).run();
 }
 
@@ -1480,14 +1756,14 @@ function resetToEmpty() {
 
 // ─── SAMPLE DATA ─────────────────────────────────────────────────────────────
 function loadSampleData() {
-  project    = { title: 'Evaluasi Infrastruktur Dana Desa Jambi', author: 'Analyst', created: new Date().toISOString().split('T')[0] };
-  hypothesis = { id: 'H1', title: 'Fokus fisik tingkatkan Rasio Gini', description: 'Kebijakan pembangunan Dana Desa yang terlalu berfokus pada infrastruktur fisik secara tidak sengaja meningkatkan ketimpangan (Rasio Gini) warga.', prior: 0.40 };
+  project    = { title: 'Jambi Village Fund Infrastructure Evaluation', author: 'Analyst', created: new Date().toISOString().split('T')[0] };
+  hypothesis = { id: 'H1', title: 'Physical focus increases Gini Ratio', description: 'Village Fund development policies that focus too heavily on physical infrastructure inadvertently increase inequality (Gini Ratio) among residents.', prior: 0.40 };
   threshold  = 0.75;
   baseEvidence = [
-    { id: 'e1', title: 'Akses Proyek Elit', likelihoodRatio: 2.5, confidence: 0.85, description: 'Proyek fisik padat modal didominasi/dimenangkan elit desa, bukan swakelola warga miskin' },
-    { id: 'e2', title: 'Data BPS Jambi', likelihoodRatio: 1.8, confidence: 0.90, description: 'Tren Rasio Gini pedesaan naik di wilayah dengan intervensi infrastruktur masif' },
-    { id: 'e3', title: 'Program Padat Karya', likelihoodRatio: 0.6, confidence: 0.70, description: 'Sebagian kecil warga miskin tetap mendapat tambahan upah harian dari proyek jalan' },
-    { id: 'e4', title: 'Lonjakan Harga Tanah', likelihoodRatio: 1.5, confidence: 0.80, description: 'Jalan baru meningkatkan harga aset tak bergerak secara drastis, menguntungkan segelintir tuan tanah' }
+    { id: 'e1', title: 'Elite Project Access', likelihoodRatio: 2.5, confidence: 0.85, description: 'Capital-intensive physical projects are dominated/won by village elites, not managed by poor residents.', cluster: 'Governance' },
+    { id: 'e2', title: 'Statistics Agency Data', likelihoodRatio: 1.8, confidence: 0.90, description: 'Rural Gini Ratio trend is rising in areas with massive infrastructure interventions.', cluster: 'Economic Data' },
+    { id: 'e3', title: 'Cash-for-Work Program', likelihoodRatio: 0.6, confidence: 0.70, description: 'A small portion of poor residents still receive additional daily wages from road construction projects.', cluster: 'Economic Data' },
+    { id: 'e4', title: 'Land Price Surge', likelihoodRatio: 1.5, confidence: 0.80, description: 'New roads drastically increase immovable asset prices, heavily benefiting a few existing landowners.', cluster: 'Real Estate' }
   ];
   scenarioEvidence = JSON.parse(JSON.stringify(baseEvidence));
   scenarioOnlyIds = new Set();
@@ -1621,13 +1897,13 @@ document.getElementById('projectAuthor').addEventListener('input', e => { projec
 
 document.getElementById('addEvidence').addEventListener('click', () => {
   const newId = 'ev_' + Date.now() + '_' + Math.random().toString(36).substr(2,4);
-  baseEvidence.push({ id: newId, title: 'New evidence', likelihoodRatio: 1.2, confidence: 0.6, description: '' });
+  baseEvidence.push({ id: newId, title: 'New evidence', likelihoodRatio: 1.2, confidence: 0.6, description: '', cluster: 'General' });
   updateAll();
 });
 
 document.getElementById('addScenarioEvidence').addEventListener('click', () => {
   const newId = 'sc_' + Date.now() + '_' + Math.random().toString(36).substr(2,4);
-  scenarioEvidence.push({ id: newId, title: 'Scenario evidence', likelihoodRatio: 1.2, confidence: 0.6, description: '' });
+  scenarioEvidence.push({ id: newId, title: 'Scenario evidence', likelihoodRatio: 1.2, confidence: 0.6, description: '', cluster: 'General' });
   scenarioOnlyIds.add(newId);
   updateAll();
 });
@@ -1638,23 +1914,74 @@ document.getElementById('resetScenario').addEventListener('click', () => {
   updateAll();
 });
 
+// STRESS TEST V3
+document.getElementById('btnStressTest').addEventListener('click', () => {
+  const warningBox = document.getElementById('stressTestWarning');
+  if (baseEvidence.length === 0) {
+    warningBox.innerHTML = "Add evidence first to run the stress test.";
+    warningBox.style.display = 'block';
+    setTimeout(() => { warningBox.style.display = 'none'; }, 3000);
+    return;
+  }
+
+  const basePost = computePosterior(hypothesis.prior, baseEvidence);
+  const baseDecision = basePost >= threshold;
+  let unstableReasons = [];
+
+  // Uji margin error ±10% confidence untuk setiap bukti
+  for (const e of baseEvidence) {
+    let upList = JSON.parse(JSON.stringify(baseEvidence));
+    let targetUp = upList.find(x => x.id === e.id);
+    targetUp.confidence = Math.min(1.0, targetUp.confidence + 0.1);
+    let upPost = computePosterior(hypothesis.prior, upList);
+
+    let downList = JSON.parse(JSON.stringify(baseEvidence));
+    let targetDown = downList.find(x => x.id === e.id);
+    targetDown.confidence = Math.max(0.0, targetDown.confidence - 0.1);
+    let downPost = computePosterior(hypothesis.prior, downList);
+
+    if ((upPost >= threshold) !== baseDecision || (downPost >= threshold) !== baseDecision) {
+      unstableReasons.push(`<strong>${esc(e.title)}</strong>`);
+    }
+  }
+
+  warningBox.style.display = 'block';
+  if (unstableReasons.length > 0) {
+    warningBox.innerHTML = `⚠️ <strong>Result Unstable!</strong> A ±10% variation in confidence for ${unstableReasons.join(', ')} flips the decision across the ${(threshold*100).toFixed(0)}% threshold. Review these inputs carefully.`;
+    warningBox.style.background = '#fff0f2';
+    warningBox.style.border = '1px solid #fac9d0';
+    warningBox.style.borderLeft = '4px solid var(--rose)';
+    warningBox.style.color = '#b01c2e';
+  } else {
+    warningBox.innerHTML = `✅ <strong>Result is Stable.</strong> A ±10% margin of error in confidence for any single evidence does not change your final decision relative to the threshold.`;
+    warningBox.style.background = '#edfbf5';
+    warningBox.style.border = '1px solid #a7e8d3';
+    warningBox.style.borderLeft = '4px solid var(--emerald)';
+    warningBox.style.color = '#0b6e4d';
+  }
+});
+
 // TABS
 document.querySelectorAll('.tab').forEach(tab => {
   tab.addEventListener('click', () => {
     document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
     document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    
     tab.classList.add('active');
-    const id = 'tab-' + tab.dataset.tab;
-    const content = document.getElementById(id);
+    const content = document.getElementById('tab-' + tab.dataset.tab);
     if (content) content.classList.add('active');
+    
     activeTab = tab.dataset.tab;
     
-    // PERBAIKAN: Beri jeda 50ms agar div memiliki ukuran sebelum dirender
     if (activeTab === 'graph') {
+      // Jeda 100ms untuk memastikan transisi CSS tab selesai
       setTimeout(() => {
-        if (cy) cy.resize();
-        updateGraph();
-      }, 50);
+        if (cy) {
+          cy.resize(); // Hitung ulang lebar kontainer
+          updateGraph(); // Gambar ulang dengan layout baru
+          cy.fit(); // Fokuskan ke tengah
+        }
+      }, 100);
     }
     if (activeTab === 'stats') updateStatsChart();
   });
@@ -1695,9 +2022,121 @@ document.getElementById('headerDate').innerText = new Date().toLocaleDateString(
 window.addEventListener('load', () => {
   cy = cytoscape({ container: document.getElementById('cy'), elements: [], style: [], layout: { name: 'circle' } });
   loadFromLocalStorage();
+
+  // Confidence Matrix Modal - update nilai slider
+document.getElementById('confSource').addEventListener('input', function() {
+  document.getElementById('confSourceVal').innerText = this.valueAsNumber.toFixed(2);
+});
+document.getElementById('confMethod').addEventListener('input', function() {
+  document.getElementById('confMethodVal').innerText = this.valueAsNumber.toFixed(2);
+});
+document.getElementById('confRecency').addEventListener('input', function() {
+  document.getElementById('confRecencyVal').innerText = this.valueAsNumber.toFixed(2);
+});
+
+// Tombol Apply
+document.getElementById('confApplyBtn').addEventListener('click', () => {
+  if (!currentConfidenceEvidenceId) {
+    document.getElementById('confMatrixModal').classList.remove('open');
+    return;
+  }
+  const source = parseFloat(document.getElementById('confSource').value);
+  const method = parseFloat(document.getElementById('confMethod').value);
+  const recency = parseFloat(document.getElementById('confRecency').value);
+  const avg = (source + method + recency) / 3;
+  
+  if (currentConfidenceIsScenario) {
+    const ev = scenarioEvidence.find(x => x.id === currentConfidenceEvidenceId);
+    if (ev) ev.confidence = avg;
+  } else {
+    const ev = baseEvidence.find(x => x.id === currentConfidenceEvidenceId);
+    if (ev) ev.confidence = avg;
+  }
+  
+  updateAll();  // refresh tampilan
+  document.getElementById('confMatrixModal').classList.remove('open');
+  currentConfidenceEvidenceId = null;
+});
+
+// Tombol Cancel
+document.getElementById('confCancelBtn').addEventListener('click', () => {
+  document.getElementById('confMatrixModal').classList.remove('open');
+  currentConfidenceEvidenceId = null;
+});
+
+// Klik di luar modal untuk menutup
+document.getElementById('confMatrixModal').addEventListener('click', e => {
+  if (e.target === e.currentTarget) {
+    e.currentTarget.classList.remove('open');
+    currentConfidenceEvidenceId = null;
+  }
+});
+
+  // Auto-expand textarea hipotesis
+const descTextarea = document.getElementById('hypothesisDesc');
+if (descTextarea) {
+  const autoExpand = function() {
+    this.style.height = 'auto';
+    this.style.height = (this.scrollHeight) + 'px';
+  };
+  descTextarea.addEventListener('input', autoExpand);
+  // Panggil sekali saat halaman dimuat untuk menyesuaikan dengan konten awal
+  setTimeout(() => autoExpand.call(descTextarea), 0);
+}
 });
 
 })();
+
 </script>
+
+<!-- Confidence Matrix Calculator Modal -->
+<div class="modal-overlay" id="confMatrixModal">
+  <div class="modal" style="max-width:400px;">
+    <h3>🧮 Confidence Matrix</h3>
+    <p style="font-size:0.85rem; margin-bottom:12px;">Adjust sliders to score each dimension. The average will set the confidence.</p>
+    
+    <div style="margin-bottom:15px;">
+      <div style="display:flex; justify-content:space-between;">
+        <label style="font-size:0.85rem;">Source Reliability</label>
+        <span id="confSourceVal" style="font-family:mono;">0.50</span>
+      </div>
+      <input type="range" id="confSource" min="0" max="1" step="0.01" value="0.5" style="width:100%;">
+      <div style="font-size:0.7rem; color:var(--muted); display:flex; justify-content:space-between;">
+        <span>Rumor (0.2)</span>
+        <span>Official Data (0.9)</span>
+      </div>
+    </div>
+    
+    <div style="margin-bottom:15px;">
+      <div style="display:flex; justify-content:space-between;">
+        <label style="font-size:0.85rem;">Sample Size / Method</label>
+        <span id="confMethodVal" style="font-family:mono;">0.50</span>
+      </div>
+      <input type="range" id="confMethod" min="0" max="1" step="0.01" value="0.5" style="width:100%;">
+      <div style="font-size:0.7rem; color:var(--muted); display:flex; justify-content:space-between;">
+        <span>Anecdotal (0.3)</span>
+        <span>Peer-reviewed (0.9)</span>
+      </div>
+    </div>
+    
+    <div style="margin-bottom:20px;">
+      <div style="display:flex; justify-content:space-between;">
+        <label style="font-size:0.85rem;">Recency</label>
+        <span id="confRecencyVal" style="font-family:mono;">0.50</span>
+      </div>
+      <input type="range" id="confRecency" min="0" max="1" step="0.01" value="0.5" style="width:100%;">
+      <div style="font-size:0.7rem; color:var(--muted); display:flex; justify-content:space-between;">
+        <span>Outdated (0.4)</span>
+        <span>Current (1.0)</span>
+      </div>
+    </div>
+    
+    <div style="display:flex; gap:10px; justify-content:flex-end;">
+      <button class="btn btn-ghost" id="confCancelBtn">Cancel</button>
+      <button class="btn btn-primary" id="confApplyBtn">Apply Average</button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
