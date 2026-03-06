@@ -1070,6 +1070,152 @@ input:checked + .toggle-slider:before { transform:translateX(16px); }
   <p>If you would expect to see this evidence 60% of the time if the claim is true, but only 20% of the time if it's false, your LR is <strong>3.0</strong> (60/20).</p>
 </div>
 
+
+<hr/>
+
+<div class="section">
+  <div class="section-title"><span class="num">16</span> 🚀 Quick Start: Learning from Zero</div>
+
+  <p>
+    If you are new to Bayesian reasoning, do not worry about the formulas at first.
+    Start with these three simple steps and focus on the logic of the evidence.
+  </p>
+
+  <ol>
+    <li>
+      <strong>Set the Prior to 0.5:</strong>
+      This represents an initial position of uncertainty — you are essentially saying
+      “I have no strong belief yet.” In Bayesian analysis, this is often called a
+      <em>non-informative starting point</em>. From there, the evidence will update the probability.
+    </li>
+
+    <li>
+      <strong>Use the Likelihood Slider Relatively:</strong>
+      Think about how likely the evidence would appear if the hypothesis were true.
+      <ul>
+        <li>
+          If the evidence would <em>very likely appear</em> when the hypothesis is true,
+          move the slider to the right (supporting evidence).
+        </li>
+        <li>
+          If the evidence would <em>rarely appear</em> when the hypothesis is true,
+          move the slider to the left (evidence against the hypothesis).
+        </li>
+      </ul>
+      The goal is not perfect numbers, but a reasonable estimate of how the evidence
+      changes the likelihood of the hypothesis.
+    </li>
+
+    <li>
+      <strong>Use the Confidence Matrix:</strong>
+      If you are unsure about the reliability of the information, click the 🧮 icon.
+      The matrix helps estimate how trustworthy or strong the evidence source is.
+      This allows the system to adjust the influence of that evidence automatically.
+    </li>
+  </ol>
+</div>
+
+<div class="section">
+  <div class="section-title"><span class="num">17</span> 🧠 Mental Model: Thinking Like a Bayesian</div>
+
+  <p>
+    Bayesian thinking is closer to how a detective works than how a judge works.
+    A judge makes a final decision at the end of a trial, but a detective constantly
+    updates their belief as new clues appear.
+  </p>
+
+  <div class="callout info">
+    <strong>Key idea:</strong>
+    Bayesian reasoning does not aim to find an absolute truth immediately.
+    Instead, it estimates the <em>most reasonable belief</em> given the evidence available
+    right now.
+  </div>
+
+  <p>
+    When new evidence appears tomorrow, the probability should change.
+    Updating beliefs in light of new data is not inconsistency — it is the
+    core principle of rational scientific reasoning.
+  </p>
+</div>
+
+<div class="section">
+  <div class="section-title"><span class="num">18</span> 🛑 Common Beginner Mistakes</div>
+
+  <ul>
+    <li>
+      <strong>Using Extreme Likelihood Ratios Too Quickly:</strong>
+      Assigning very large Likelihood Ratios (for example LR = 20) for evidence that
+      is based only on rumors or weak observations. In most practical analyses,
+      moderate values (around 1.5 – 3.0) are safer unless the evidence is extremely
+      strong or experimentally verified.
+    </li>
+
+    <li>
+      <strong>Ignoring Contradictory Evidence:</strong>
+      Adding many pieces of supporting evidence while intentionally ignoring
+      information that contradicts the hypothesis. This is a classic
+      <em>confirmation bias</em>.
+      A robust analysis should always consider both supporting and opposing evidence.
+    </li>
+
+    <li>
+      <strong>Confusing Evidence Strength with Source Reliability:</strong>
+      Remember that these two concepts are different:
+      <ul>
+        <li>
+          <strong>Likelihood Ratio (LR):</strong> how strongly the evidence supports or
+          contradicts the hypothesis.
+        </li>
+        <li>
+          <strong>Confidence:</strong> how much you trust the source or quality of that evidence.
+        </li>
+      </ul>
+      Strong evidence from an unreliable source should still be treated cautiously.
+    </li>
+  </ul>
+</div>
+
+<div class="section">
+  <div class="section-title"><span class="num">19</span> 🎯 Decision Threshold</div>
+
+  <p>
+    The <strong>decision threshold</strong> defines the minimum probability required
+    before taking action on a hypothesis.
+  </p>
+
+  <p>
+    In Bayesian analysis, probability alone does not automatically determine a decision.
+    A threshold acts as a boundary between <em>"continue investigating"</em> and
+    <em>"sufficient evidence to act."</em>
+  </p>
+
+  <div class="callout info">
+    <strong>Decision rule:</strong><br/>
+    Act if <strong>Posterior ≥ Threshold</strong>.
+  </div>
+
+  <p>
+    For example, if the threshold is set to <strong>0.75</strong> and the calculated
+    posterior probability is <strong>0.70</strong>, the evidence suggests the hypothesis
+    is plausible, but not strong enough to justify action yet.
+  </p>
+
+  <p>
+    The appropriate threshold depends on the context and the cost of being wrong.
+  </p>
+
+  <ul>
+    <li><strong>Exploratory analysis:</strong> 0.60 – 0.70</li>
+    <li><strong>Policy decisions:</strong> 0.70 – 0.80</li>
+    <li><strong>High-risk decisions:</strong> 0.80 – 0.95</li>
+  </ul>
+
+  <p>
+    Higher thresholds require stronger evidence but reduce the risk of acting on
+    incorrect conclusions.
+  </p>
+</div>
+
       <div class="guide-contact">
   <h5 class="sub" style="margin-top:0;">Contact & Collaboration</h5>
   <p style="font-size: 13px; margin-bottom: 10px;">For further discussion on Bayesian methodology in program governance or digital systems development, please contact:</p>
@@ -2153,6 +2299,54 @@ if (descTextarea) {
 });
 
 })();
+
+function detectClusterBias(prior, evidenceList) {
+  if (evidenceList.length < 3) return null;
+
+  const clusterImpacts = {};
+  let totalAbsoluteImpact = 0;
+
+  // 1. Hitung dampak absolut tiap cluster
+  evidenceList.forEach(e => {
+    const impact = Math.abs(computeImpact(prior, evidenceList, e.id));
+    const clusterName = e.cluster || 'General';
+    
+    clusterImpacts[clusterName] = (clusterImpacts[clusterName] || 0) + impact;
+    totalAbsoluteImpact += impact;
+  });
+
+  if (totalAbsoluteImpact === 0) return null;
+
+  // 2. Cari cluster dominan
+  for (const cluster in clusterImpacts) {
+    const share = clusterImpacts[cluster] / totalAbsoluteImpact;
+    
+    // Jika satu cluster menyumbang > 70% pergerakan needle
+    if (share > 0.7) {
+      return {
+        type: 'cluster-bias',
+        cluster: cluster,
+        share: (share * 100).toFixed(0),
+        msg: `⚠️ <strong>Cluster Over-reliance:</strong> Kategori <strong>[${cluster}]</strong> mendominasi ${ (share * 100).toFixed(0) }% analisis Anda. Kesimpulan Anda sangat rentan jika data di kategori ini tidak akurat.`
+      };
+    }
+  }
+  return null;
+}
+
+// Integrasikan ke updateBiasDetector Anda
+function updateBiasDetector(evidenceList) {
+  const biasBox = document.getElementById('biasWarning');
+  const clusterBias = detectClusterBias(hypothesis.prior, evidenceList);
+  
+  // Logika Confirmation Bias Anda yang lama...
+  let content = "";
+  // ... (tambahkan logika clusterBias di sini)
+  if (clusterBias) {
+    content = clusterBias.msg;
+  }
+  // Tampilkan ke UI
+}
 
 </script>
 
