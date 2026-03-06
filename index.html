@@ -136,7 +136,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
 .ev-card.ev-support{border-left:4px solid var(--emerald)}
 .ev-card.ev-oppose{border-left:4px solid var(--rose)}
 .ev-card.ev-neutral{border-left:4px solid var(--amber)}
-.ev-card-top{display:grid;grid-template-columns:1fr 90px 90px 40px;gap:8px;align-items:center}
+.ev-card-top{display:grid;grid-template-columns:1fr 105px 90px 40px;gap:8px;align-items:start}
 .ev-tag{font-size:.7rem;font-weight:600;padding:2px 8px;border-radius:20px;margin-left:6px}
 .ev-tag.sup{background:#d4f5e9;color:#0b6e4d}
 .ev-tag.opp{background:#ffe0e5;color:#b01c2e}
@@ -893,6 +893,26 @@ input:checked + .slider:after {
       </div>
 
       <div class="section">
+        <div class="section-title"><span class="num">★</span> Likelihood Ratio Suggestion Scale</div>
+        <p>If you are unsure what Likelihood Ratio value to assign, you can use the built-in <strong>Preset dropdown</strong>. The scale translates qualitative evidence strength into approximate LR values commonly used in Bayesian reasoning and intelligence analysis.</p>
+        <table>
+          <thead>
+            <tr><th>Evidence Strength</th><th>Approximate LR</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Strong Support (For)</td><td>10.0</td></tr>
+            <tr><td>Moderate Support (For)</td><td>3.0</td></tr>
+            <tr><td>Weak Support (For)</td><td>1.5</td></tr>
+            <tr><td>Neutral</td><td>1.0</td></tr>
+            <tr><td>Weak Against</td><td>0.7</td></tr>
+            <tr><td>Moderate Against</td><td>0.4</td></tr>
+            <tr><td>Strong Against</td><td>0.2</td></tr>
+          </tbody>
+        </table>
+        <p><em>These values are guidelines only. Users may still manually type custom Likelihood Ratios if more precise estimates are available.</em></p>
+      </div>
+
+      <div class="section">
         <div class="section-title"><span class="num">7</span> Confidence — What It Is and Why It Matters</div>
         <div class="callout warning">
           <span class="callout-title">★ Key Concept</span>
@@ -1288,6 +1308,114 @@ input:checked + .slider:after {
   </p>
 </div>
 
+<div class="section">
+  <div class="section-title"><span class="num">20</span> 📊 Confidence Matrix (Evidence Quality)</div>
+
+  <p>
+    Not all evidence has the same reliability. The <strong>Confidence Matrix</strong>
+    helps users estimate the overall quality of an evidence source by scoring
+    three dimensions.
+  </p>
+
+  <p>
+    The system averages these scores to generate the final
+    <strong>confidence value</strong> used in the Bayesian update.
+  </p>
+
+  <div class="callout info">
+    The confidence score modifies how strongly a piece of evidence influences
+    the final probability.
+  </div>
+
+  <h4>Three Evidence Quality Dimensions</h4>
+
+  <ul>
+    <li>
+      <strong>Source Reliability</strong><br/>
+      Measures how trustworthy the source of the information is.
+      <ul>
+        <li>Rumor / informal claim → low reliability</li>
+        <li>Official statistics or verified data → high reliability</li>
+      </ul>
+    </li>
+
+    <li>
+      <strong>Sample Size / Method</strong><br/>
+      Evaluates how the evidence was collected.
+      <ul>
+        <li>Anecdotal observation → weaker evidence</li>
+        <li>Structured surveys or peer-reviewed studies → stronger evidence</li>
+      </ul>
+    </li>
+
+    <li>
+      <strong>Recency</strong><br/>
+      Considers how current the information is.
+      <ul>
+        <li>Outdated data may no longer reflect present conditions</li>
+        <li>Recent observations typically provide stronger signals</li>
+      </ul>
+    </li>
+  </ul>
+
+  <p>
+    The average of these three dimensions becomes the final
+    <strong>confidence score</strong> applied to the evidence.
+  </p>
+
+  <p style="text-align:center; font-family:var(--mono); background:#FAFCFF; padding:10px; border-radius:8px; border:1px solid var(--border); margin:10px 0;">
+    Effective LR = LR ^ confidence
+  </p>
+
+  <p>
+    This means low-confidence evidence still contributes to the analysis,
+    but its impact on the final probability is reduced.
+  </p>
+
+</div>
+
+<div class="section">
+  <div class="section-title"><span class="num">21</span> 📈 Evidence Impact</div>
+
+  <p>
+    Each evidence item displays its <strong>impact on the posterior probability</strong>.
+  </p>
+
+  <p>
+    This shows how much the hypothesis probability changed after the evidence
+    was incorporated into the calculation.
+  </p>
+
+  <ul>
+    <li>Positive impact → evidence supports the hypothesis</li>
+    <li>Negative impact → evidence weakens the hypothesis</li>
+  </ul>
+
+  <p>
+    This feature helps analysts quickly identify which observations are
+    driving the final result.
+  </p>
+</div>
+
+<div class="section">
+  <div class="section-title"><span class="num">22</span> 🔍 Top Drivers</div>
+
+  <p>
+    The <strong>Top Drivers</strong> section highlights the pieces of evidence
+    that contributed the most to the final probability update.
+  </p>
+
+  <p>
+    This allows users to quickly identify the key factors influencing the
+    analytical conclusion.
+  </p>
+
+  <p>
+    Large positive values indicate strong supporting evidence,
+    while large negative values indicate strong counter-evidence.
+  </p>
+</div>
+
       <div class="guide-contact">
   <h5 class="sub" style="margin-top:0;">Contact & Collaboration</h5>
   <p style="font-size: 13px; margin-bottom: 10px;">For further discussion on Bayesian methodology in program governance or digital systems development, please contact:</p>
@@ -1518,7 +1646,7 @@ function renderEvidenceCard(e, isScenario) {
   const impact    = computeImpact(hypothesis.prior, isScenario ? scenarioEvidence : baseEvidence, e.id);
   const impactPct = (Math.abs(impact) * 100).toFixed(1);
   const impactDir = impact >= 0 ? 'pos' : 'neg';
-  const impactBarW= Math.min(50, Math.abs(impact) * 200); // max width 50% from center
+  const impactBarW= Math.min(50, Math.abs(impact) * 200);
 
   const prefix = isScenario ? 'sc_' : 'ba_';
   const isScenOnly = isScenario && scenarioOnlyIds.has(e.id);
@@ -1526,6 +1654,7 @@ function renderEvidenceCard(e, isScenario) {
   return `<div class="ev-card ${cardClass}" id="card-${e.id}">
     <button class="delete-ev" data-id="${e.id}" data-type="${isScenario ? 'scenario' : 'base'}">✕</button>
     <div class="ev-card-top">
+      
       <div>
         <div class="ev-meta">
           <input type="text" class="input input-sm flex-1 ev-title-input" value="${esc(e.title)}" placeholder="Evidence title" data-id="${e.id}" data-type="${isScenario ? 'scenario' : 'base'}" style="font-weight:500">
@@ -1534,19 +1663,35 @@ function renderEvidenceCard(e, isScenario) {
           ${isScenOnly ? '<span class="ev-tag" style="background:#f0e6ff;color:#6b21a8">📌 scenario</span>' : ''}
         </div>
       </div>
+      
       <div>
         <div class="ev-label">Likelihood Ratio</div>
-        <input type="number" class="input input-sm ev-lr-input" step="0.1" min="0.01" max="20"
-          value="${e.likelihoodRatio.toFixed(2)}" data-id="${e.id}" data-type="${isScenario ? 'scenario' : 'base'}">
-      </div>
+        <div style="display:flex; flex-direction:column; gap:4px;">
+          <input type="number" class="input input-sm ev-lr-input" step="0.1" min="0.01" max="20"
+            value="${e.likelihoodRatio.toFixed(2)}" data-id="${e.id}" data-type="${isScenario ? 'scenario' : 'base'}">
+          <select class="input input-sm ev-lr-select" data-id="${e.id}" data-type="${isScenario ? 'scenario' : 'base'}" style="padding: 2px 4px; font-size: 0.7rem; color: var(--muted); cursor: pointer;">
+            <option value="">-- Preset --</option>
+            <option value="10.0">Strong For (10)</option>
+            <option value="3.0">Mod For (3.0)</option>
+            <option value="1.5">Weak For (1.5)</option>
+            <option value="1.0">Neutral (1.0)</option>
+            <option value="0.7">Weak Agst (0.7)</option>
+            <option value="0.4">Mod Agst (0.4)</option>
+            <option value="0.2">Strong Agst (0.2)</option>
+          </select>
+        </div>
+      </div> 
+      
       <div>
         <div class="ev-label">Conf: <span class="conf-badge" id="${prefix}conf-${e.id}">${e.confidence.toFixed(2)}</span></div>
         <input type="range" min="0" max="1" step="0.01" value="${e.confidence}"
           class="ev-conf-input" data-id="${e.id}" data-type="${isScenario ? 'scenario' : 'base'}" style="width:100%">
       </div>
+      
       <div style="text-align:right;">
-  <button class="btn-conf-calc" data-id="${e.id}" style="background:none; border:none; font-size:1.2rem; cursor:pointer; padding:2px;" title="Confidence Matrix">🧮</button>
-</div>
+        <button class="btn-conf-calc" data-id="${e.id}" style="background:none; border:none; font-size:1.2rem; cursor:pointer; padding:2px; margin-top:10px;" title="Confidence Matrix">🧮</button>
+      </div>
+
     </div>
 
     <div class="ev-card-bottom">
@@ -1676,32 +1821,43 @@ function detectClusterBias(prior, evidenceList) {
 
 
   // ─── BIAS DETECTOR V3 ────────────────────────────────────────────────────────
+// ─── BIAS DETECTOR V3 (COMBINED) ──────────────────────────────────────────────
 function updateBiasDetector(evidenceList) {
   const biasBox = document.getElementById('biasWarning');
-  if (evidenceList.length < 3) { // Deteksi baru aktif jika minimal ada 3 bukti
+  if (evidenceList.length < 3) { 
     biasBox.style.display = 'none';
     return;
   }
 
-  const supporting = evidenceList.filter(e => e.likelihoodRatio > 1.05).length;
-  const against = evidenceList.filter(e => e.likelihoodRatio < 0.95).length;
-  const total = evidenceList.length;
-  const ratio = supporting / total;
-
   let content = "";
   let style = "";
 
-  if (ratio === 1) {
-    content = "⚠️ <strong>Confirmation Bias Alert:</strong> 100% dari bukti Anda bersifat mendukung hipotesis. Sebagai analis, pastikan Anda tidak melewatkan bukti yang kontradiktif demi objektivitas laporan.";
+  // 1. Cek Cluster Bias terlebih dahulu
+  const clusterBias = detectClusterBias(hypothesis.prior, evidenceList);
+  
+  if (clusterBias) {
+    content = clusterBias.msg;
     style = "background: #fffbeb; border-color: #fef3c7; color: #92400e; border-left: 4px solid #f59e0b;";
-  } else if (ratio >= 0.8) {
-    content = "🔍 <strong>Analytic Tip:</strong> Analisis Anda sangat condong ke arah 'Mendukung' (>80%). Coba tantang kesimpulan ini dengan mencari skenario terburuk atau <em>counter-evidence</em>.";
-    style = "background: #eff6ff; border-color: #dbeafe; color: #1e40af; border-left: 4px solid #3b82f6;";
+  } 
+  // 2. Jika tidak ada Cluster Bias, cek Confirmation Bias
+  else {
+    const supporting = evidenceList.filter(e => e.likelihoodRatio > 1.05).length;
+    const total = evidenceList.length;
+    const ratio = supporting / total;
+
+    if (ratio === 1) {
+      content = "⚠️ <strong>Confirmation Bias Alert:</strong> 100% of your evidence supports the hypothesis. Consider checking whether contradictory or disconfirming evidence might have been overlooked.";
+      style = "background: #fffbeb; border-color: #fef3c7; color: #92400e; border-left: 4px solid #f59e0b;";
+    } else if (ratio >= 0.8) {
+      content = "🔍 <strong>Analytical Tip:</strong> Your analysis is heavily skewed toward supporting evidence (>80%). Try challenging the conclusion by actively searching for counter-evidence.";
+      style = "background: #eff6ff; border-color: #dbeafe; color: #1e40af; border-left: 4px solid #3b82f6;";
+    }
   }
 
+  // Eksekusi Tampilan
   if (content) {
     biasBox.innerHTML = content;
-    biasBox.style.cssText += style; // Tambahkan style yang sesuai
+    biasBox.style.cssText = "padding:10px; border-radius:8px; font-size:.75rem; margin-top:10px; " + style;
     biasBox.style.display = 'block';
   } else {
     biasBox.style.display = 'none';
@@ -1844,6 +2000,18 @@ function attachCardListeners(container, isScenario) {
     const val = parseFloat(e.target.value);
     const ev = target.find(x => x.id === e.target.dataset.id);
     if (ev && val > 0 && isFinite(val)) { ev.likelihoodRatio = val; updateAll(); }
+  }));
+
+  // --- TAMBAHKAN KODE INI DI DALAM attachCardListeners ---
+  container.querySelectorAll('.ev-lr-select').forEach(sel => sel.addEventListener('change', e => {
+    const val = parseFloat(e.target.value);
+    if (isNaN(val)) return; // Abaikan jika user pilih "-- Preset --"
+    
+    const ev = target.find(x => x.id === e.target.dataset.id);
+    if (ev && val > 0 && isFinite(val)) { 
+      ev.likelihoodRatio = val; 
+      updateAll(); 
+    }
   }));
 
   container.querySelectorAll('.ev-conf-input').forEach(inp => inp.addEventListener('input', e => {
@@ -2186,14 +2354,14 @@ function resetToEmpty() {
 
 // ─── SAMPLE DATA ─────────────────────────────────────────────────────────────
 function loadSampleData() {
-  project    = { title: 'Jambi Village Fund Infrastructure Evaluation', author: 'Analyst', created: new Date().toISOString().split('T')[0] };
-  hypothesis = { id: 'H1', title: 'Physical focus increases Gini Ratio', description: 'Village Fund development policies that focus too heavily on physical infrastructure inadvertently increase inequality (Gini Ratio) among residents.', prior: 0.40 };
+  project    = { title: 'AMOC Tipping Point Risk Assessment', author: 'Climate Science Analyst', created: new Date().toISOString().split('T')[0] };
+  hypothesis = { id: 'H1', title: 'AMOC Collapse Before 2100', description: 'The Atlantic Meridional Overturning Circulation (AMOC) is on an irreversible trajectory toward a tipping point and will experience a severe shutdown before the year 2100.', prior: 0.25 };
   threshold  = 0.75;
   baseEvidence = [
-    { id: 'e1', title: 'Elite Project Access', likelihoodRatio: 2.5, confidence: 0.85, description: 'Capital-intensive physical projects are dominated/won by village elites, not managed by poor residents.', cluster: 'Governance' },
-    { id: 'e2', title: 'Statistics Agency Data', likelihoodRatio: 1.8, confidence: 0.90, description: 'Rural Gini Ratio trend is rising in areas with massive infrastructure interventions.', cluster: 'Economic Data' },
-    { id: 'e3', title: 'Cash-for-Work Program', likelihoodRatio: 0.6, confidence: 0.70, description: 'A small portion of poor residents still receive additional daily wages from road construction projects.', cluster: 'Economic Data' },
-    { id: 'e4', title: 'Land Price Surge', likelihoodRatio: 1.5, confidence: 0.80, description: 'New roads drastically increase immovable asset prices, heavily benefiting a few existing landowners.', cluster: 'Real Estate' }
+    { id: 'e1', title: 'Physics-Based Tipping Indicators', likelihoodRatio: 3.5, confidence: 0.85, description: 'High-resolution Earth System Model (CESM) simulations show freshwater transport at the Atlantic southern boundary indicates the current is on a tipping course, estimating onset between 2055-2063.', cluster: 'Oceanic Modeling' },
+    { id: 'e2', title: 'SST Critical Slowing Down', likelihoodRatio: 2.8, confidence: 0.70, description: 'Statistical analysis of the North Atlantic "cold blob" (Sea Surface Temperature variance) shows loss of resilience and critical slowing down, projecting a central collapse year around 2050.', cluster: 'Historical Observation' },
+    { id: 'e3', title: 'Salinity & Freshwater Anomalies', likelihoodRatio: 2.0, confidence: 0.80, description: 'Independent EN4 salinity datasets reveal spatially consistent empirical evidence that the Atlantic circulation has evolved from stable conditions to a point close to a critical transition due to ice melt.', cluster: 'Empirical Measurements' },
+    { id: 'e4', title: 'Reconciled Warning Signals', likelihoodRatio: 1.5, confidence: 0.75, description: 'Recent studies show standard models overestimated freshwater feedbacks. Corrected observational data aligns with models, suggesting the tipping point is nearing faster than previously assumed.', cluster: 'Oceanic Modeling' }
   ];
   scenarioEvidence = JSON.parse(JSON.stringify(baseEvidence));
   scenarioOnlyIds = new Set();
@@ -2623,21 +2791,6 @@ if (descTextarea) {
 });
 
 })();
-
-// Integrasikan ke updateBiasDetector Anda
-function updateBiasDetector(evidenceList) {
-  const biasBox = document.getElementById('biasWarning');
-  const clusterBias = detectClusterBias(hypothesis.prior, evidenceList);
-  
-  // Logika Confirmation Bias Anda yang lama...
-  let content = "";
-  // ... (tambahkan logika clusterBias di sini)
-  if (clusterBias) {
-    content = clusterBias.msg;
-  }
-  // Tampilkan ke UI
-}
-
 
 </script>
 
