@@ -5,7 +5,7 @@
 
 ---
 
-# 0. Core Principle of This Application
+# Core Principle of This Application
 
 > ⚠ **Architecture Notice**  
 > This application is built on a **Naive Bayes architecture**.  
