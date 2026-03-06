@@ -485,6 +485,70 @@ input:checked + .toggle-slider:before { transform:translateX(16px); }
   stroke: currentColor;
 }
 
+/* Toggle Switch */
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 50px;
+  height: 24px;
+}
+
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #ccc;
+  transition: 0.3s;
+  border-radius: 24px;
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 18px;
+  width: 18px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: 0.3s;
+  border-radius: 50%;
+}
+
+input:checked + .slider {
+  background-color: var(--emerald);
+}
+
+input:checked + .slider:before {
+  transform: translateX(26px);
+}
+
+/* Optional: Label di dalam slider (jika ingin) */
+.slider:after {
+  content: 'EN';
+  color: white;
+  display: block;
+  position: absolute;
+  left: 6px;
+  top: 3px;
+  font-size: 10px;
+  font-weight: bold;
+}
+
+input:checked + .slider:after {
+  content: 'ID';
+  left: auto;
+  right: 6px;
+}
+
 </style>
 </head>
 <body>
@@ -638,6 +702,14 @@ input:checked + .toggle-slider:before { transform:translateX(16px); }
   <button class="btn btn-sample" id="loadSample">🧪 Load sample</button>
   <button class="btn btn-ghost" id="btnGuideModal">💡 Guide: How-To</button>
   <div style="margin-left:auto; font-size:.72rem; color:var(--muted)">All data stays in your browser · autosaved locally</div>
+  <div class="lang-toggle" style="display: flex; align-items: center; margin-left: 10px;">
+  <span style="font-size: 0.8rem; margin-right: 8px; color: var(--muted);">🌐</span>
+  <label class="switch">
+    <input type="checkbox" id="langToggle">
+    <span class="slider round"></span>
+  </label>
+  <span id="langLabel" style="margin-left: 8px; font-size: 0.8rem; font-weight: 500; color: var(--navy);">EN</span>
+</div>
 </div>
 
 <!-- Removed empty div for valid HTML structure -->
@@ -1243,6 +1315,8 @@ input:checked + .toggle-slider:before { transform:translateX(16px); }
   </div></div>
 
 <script>
+
+
 (function() {
 'use strict';
 
@@ -1257,6 +1331,33 @@ let activeTab = 'sensitivity';
 let scenarioOnlyIds = new Set(); // track scenario-only evidence IDs
 let currentConfidenceEvidenceId = null;
 let currentConfidenceIsScenario = false;
+
+const i18n = {
+  en: {
+    stable: "The result is stable.",
+    unstable: "⚠️ Result is volatile!",
+    bias_warn: "Bias detected: seekers mindset.",
+    top_driver: "The main driver is",
+    threshold_met: "Conditions favour action.",
+    threshold_miss: "More evidence required.",
+    summary_intro: "Analysis Summary:",
+    humanist_wrap: (post, status, driver, bias) => 
+      `The hypothesis currently stands at ${post}. ${status} ${driver} ${bias} ${status}`
+  },
+  id: {
+    stable: "Hasil ini stabil.",
+    unstable: "⚠️ Hasil sangat sensitif!",
+    bias_warn: "Terdeteksi bias: terlalu satu arah.",
+    top_driver: "Pendorong utama adalah",
+    threshold_met: "Kondisi mendukung pengambilan keputusan.",
+    threshold_miss: "Butuh investigasi lebih lanjut.",
+    summary_intro: "Ringkasan Analisis:",
+    humanist_wrap: (post, status, driver, bias) => 
+      `Hipotesis saat ini berada di angka ${post}. ${status} ${driver} ${bias} ${status}`
+  }
+};
+
+let currentLang = 'en'; // Default english
 
 // ─── BAYESIAN CORE ───────────────────────────────────────────────────────────
 /**
@@ -1321,17 +1422,33 @@ function priorQualLabel(p) {
   return 'Very high prior';
 }
 
-function buildInterpretation(prior, basePost, threshold, evidenceList) {
-  const ql = qualitativeLabel(basePost);
-  const change = basePost - prior;
-  const direction = change > 0.01 ? 'increased' : change < -0.01 ? 'decreased' : 'remained stable';
-  const eName = evidenceList.length > 0
-    ? `, particularly due to <strong>${evidenceList.sort((a,b) => Math.abs(computeImpact(prior,[...evidenceList],a.id)) - Math.abs(computeImpact(prior,[...evidenceList],b.id)))[0]?.title || 'current evidence'}</strong>`
-    : '';
-  const threshNote = basePost >= threshold
-    ? `✅ Posterior exceeds decision threshold (${(threshold*100).toFixed(0)}%) — conditions may favour action.`
-    : `⚠️ Posterior is below threshold (${(threshold*100).toFixed(0)}%) — more evidence or investigation recommended before acting.`;
-  return `<strong>${ql.text}</strong> (${(basePost*100).toFixed(1)}%). The probability has ${direction} from the prior of ${(prior*100).toFixed(0)}%${eName}. ${threshNote}`;
+function generateHumanistSummary() {
+  const lang = i18n[currentLang];
+  const post = (computePosterior(hypothesis.prior, baseEvidence) * 100).toFixed(1) + "%";
+  const basePost = computePosterior(hypothesis.prior, baseEvidence);
+  
+  // 1. Status Threshold
+  const status = basePost >= threshold ? lang.threshold_met : lang.threshold_miss;
+  
+  // 2. Cari Top Driver
+  const sorted = [...baseEvidence].sort((a,b) => 
+    Math.abs(computeImpact(hypothesis.prior, baseEvidence, b.id)) - Math.abs(computeImpact(hypothesis.prior, baseEvidence, a.id))
+  );
+  const driver = sorted.length > 0 ? `${lang.top_driver} <strong>${sorted[0].title}</strong>.` : "";
+  
+  // 3. Cek Bias
+  const biasInfo = detectClusterBias(hypothesis.prior, baseEvidence);
+  const biasNote = biasInfo ? `<br/>${lang.bias_warn}` : "";
+
+  return `
+    <div class="humanist-report">
+      <h4 style="margin-bottom:8px; font-size:0.9rem; opacity:0.8;">${lang.summary_intro}</h4>
+      <p style="font-size:1.05rem; line-height:1.5;">
+        ${currentLang === 'id' ? 'Keyakinan sistem' : 'System confidence'} 
+        <strong>${post}</strong>. ${status} ${driver} ${biasNote}
+      </p>
+    </div>
+  `;
 }
 
 // ─── ANALYST SUMMARY V3 ──────────────────────────────────────────────────────
@@ -1526,7 +1643,37 @@ function detectBias(prior, evidenceList) {
   return null;
 }
 
-// ─── BIAS DETECTOR ─────────────────────────────────────────────────
+function detectClusterBias(prior, evidenceList) {
+  if (evidenceList.length < 3) return null;
+
+  const clusterImpacts = {};
+  let totalAbsoluteImpact = 0;
+
+  evidenceList.forEach(e => {
+    const impact = Math.abs(computeImpact(prior, evidenceList, e.id));
+    const clusterName = e.cluster || 'General';
+    
+    clusterImpacts[clusterName] = (clusterImpacts[clusterName] || 0) + impact;
+    totalAbsoluteImpact += impact;
+  });
+
+  if (totalAbsoluteImpact === 0) return null;
+
+  for (const cluster in clusterImpacts) {
+    const share = clusterImpacts[cluster] / totalAbsoluteImpact;
+    
+    if (share > 0.7) {
+      return {
+        type: 'cluster-bias',
+        cluster: cluster,
+        share: (share * 100).toFixed(0),
+        msg: `⚠️ <strong>Cluster Over-reliance:</strong> Kategori <strong>[${cluster}]</strong> mendominasi ${ (share * 100).toFixed(0) }% analisis Anda. Kesimpulan Anda sangat rentan jika data di kategori ini tidak akurat.`
+      };
+    }
+  }
+  return null;
+}
+
 
   // ─── BIAS DETECTOR V3 ────────────────────────────────────────────────────────
 function updateBiasDetector(evidenceList) {
@@ -1637,7 +1784,7 @@ function updateAll() {
   document.getElementById('thresholdLine').style.left = (threshold * 100) + '%';
 
   // interpretation
-  document.getElementById('interpretationBox').innerHTML = buildInterpretation(prior, basePost, threshold, baseEvidence);
+  document.getElementById('interpretationBox').innerHTML = generateHumanistSummary();
   renderAnalystSummary(prior, baseEvidence);
 
   // threshold status
@@ -2236,6 +2383,23 @@ window.addEventListener('load', () => {
   cy = cytoscape({ container: document.getElementById('cy'), elements: [], style: [], layout: { name: 'circle' } });
   loadFromLocalStorage();
 
+  // Language toggle
+const langToggle = document.getElementById('langToggle');
+const langLabel = document.getElementById('langLabel');
+
+if (langToggle) {
+  // Set initial state berdasarkan currentLang
+  langToggle.checked = (currentLang === 'id');
+  langLabel.innerText = currentLang.toUpperCase();
+
+  langToggle.addEventListener('change', function() {
+    currentLang = this.checked ? 'id' : 'en';
+    langLabel.innerText = currentLang.toUpperCase();
+    updateAll();  // Refresh tampilan (summary akan berubah)
+  });
+}
+
+
   // Confidence Matrix Modal - update nilai slider
 document.getElementById('confSource').addEventListener('input', function() {
   document.getElementById('confSourceVal').innerText = this.valueAsNumber.toFixed(2);
@@ -2300,40 +2464,6 @@ if (descTextarea) {
 
 })();
 
-function detectClusterBias(prior, evidenceList) {
-  if (evidenceList.length < 3) return null;
-
-  const clusterImpacts = {};
-  let totalAbsoluteImpact = 0;
-
-  // 1. Hitung dampak absolut tiap cluster
-  evidenceList.forEach(e => {
-    const impact = Math.abs(computeImpact(prior, evidenceList, e.id));
-    const clusterName = e.cluster || 'General';
-    
-    clusterImpacts[clusterName] = (clusterImpacts[clusterName] || 0) + impact;
-    totalAbsoluteImpact += impact;
-  });
-
-  if (totalAbsoluteImpact === 0) return null;
-
-  // 2. Cari cluster dominan
-  for (const cluster in clusterImpacts) {
-    const share = clusterImpacts[cluster] / totalAbsoluteImpact;
-    
-    // Jika satu cluster menyumbang > 70% pergerakan needle
-    if (share > 0.7) {
-      return {
-        type: 'cluster-bias',
-        cluster: cluster,
-        share: (share * 100).toFixed(0),
-        msg: `⚠️ <strong>Cluster Over-reliance:</strong> Kategori <strong>[${cluster}]</strong> mendominasi ${ (share * 100).toFixed(0) }% analisis Anda. Kesimpulan Anda sangat rentan jika data di kategori ini tidak akurat.`
-      };
-    }
-  }
-  return null;
-}
-
 // Integrasikan ke updateBiasDetector Anda
 function updateBiasDetector(evidenceList) {
   const biasBox = document.getElementById('biasWarning');
@@ -2347,6 +2477,7 @@ function updateBiasDetector(evidenceList) {
   }
   // Tampilkan ke UI
 }
+
 
 </script>
 
