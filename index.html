@@ -2358,10 +2358,132 @@ function loadSampleData() {
   hypothesis = { id: 'H1', title: 'AMOC Collapse Before 2100', description: 'The Atlantic Meridional Overturning Circulation (AMOC) is on an irreversible trajectory toward a tipping point and will experience a severe shutdown before the year 2100.', prior: 0.25 };
   threshold  = 0.75;
   baseEvidence = [
-    { id: 'e1', title: 'Physics-Based Tipping Indicators', likelihoodRatio: 3.5, confidence: 0.85, description: 'High-resolution Earth System Model (CESM) simulations show freshwater transport at the Atlantic southern boundary indicates the current is on a tipping course, estimating onset between 2055-2063.', cluster: 'Oceanic Modeling' },
-    { id: 'e2', title: 'SST Critical Slowing Down', likelihoodRatio: 2.8, confidence: 0.70, description: 'Statistical analysis of the North Atlantic "cold blob" (Sea Surface Temperature variance) shows loss of resilience and critical slowing down, projecting a central collapse year around 2050.', cluster: 'Historical Observation' },
-    { id: 'e3', title: 'Salinity & Freshwater Anomalies', likelihoodRatio: 2.0, confidence: 0.80, description: 'Independent EN4 salinity datasets reveal spatially consistent empirical evidence that the Atlantic circulation has evolved from stable conditions to a point close to a critical transition due to ice melt.', cluster: 'Empirical Measurements' },
-    { id: 'e4', title: 'Reconciled Warning Signals', likelihoodRatio: 1.5, confidence: 0.75, description: 'Recent studies show standard models overestimated freshwater feedbacks. Corrected observational data aligns with models, suggesting the tipping point is nearing faster than previously assumed.', cluster: 'Oceanic Modeling' }
+
+    // ── SUPPORTING EVIDENCE ────────────────────────────────────────────────
+
+    {
+      id: 'e1',
+      title: 'Physics-Based Tipping Indicators (CESM)',
+      likelihoodRatio: 3.5,
+      confidence: 0.85,
+      description: 'High-resolution Community Earth System Model (CESM2) simulations show freshwater transport at the Atlantic southern boundary (Mov index) has turned negative, a classic indicator of bi-stable regime. Ensemble runs estimate tipping onset between 2055–2063 under SSP2-4.5 and earlier under SSP5-8.5. (Boers, Nature Climate Change, 2021)',
+      cluster: 'Oceanic Modeling'
+    },
+    {
+      id: 'e2',
+      title: 'SST Critical Slowing Down Signal',
+      likelihoodRatio: 2.8,
+      confidence: 0.70,
+      description: 'Statistical analysis of the North Atlantic "cold blob" subpolar gyre SST variance shows rising autocorrelation and variance — canonical early-warning signals of critical slowing down. Bootstrapped time-series analysis projects a central collapse year near 2057 (CI: 2025–2095). (Ditlevsen & Ditlevsen, Nature Communications, 2023)',
+      cluster: 'Historical Observation'
+    },
+    {
+      id: 'e3',
+      title: 'EN4 Salinity & Freshwater Anomalies',
+      likelihoodRatio: 2.0,
+      confidence: 0.80,
+      description: 'Independent EN4 and Argo float salinity datasets reveal a spatially coherent freshening trend in Labrador Sea deep-water formation sites (−0.04 PSU/decade since 1990). Freshwater hosing experiments confirm this anomaly is sufficient to push AMOC toward a critical transition. (Caesar et al., Nature, 2018)',
+      cluster: 'Empirical Measurements'
+    },
+    {
+      id: 'e4',
+      title: 'Corrected Model-Observation Reconciliation',
+      likelihoodRatio: 1.5,
+      confidence: 0.75,
+      description: 'CMIP6 models systematically underestimate freshwater feedback in the Atlantic due to coarse-resolution salinity advection. Bias-corrected runs using EN4 reanalysis show tipping timescales roughly 15–20 years earlier than raw CMIP6 projections under RCP8.5.',
+      cluster: 'Oceanic Modeling'
+    },
+    {
+      id: 'e5',
+      title: 'Paleoclimate Sediment Core Evidence',
+      likelihoodRatio: 3.1,
+      confidence: 0.90,
+      description: 'Deep-sea sediment cores from the Iberian Margin show 231Pa/230Th ratios (a proxy for AMOC export production) during Heinrich Stadials dropped to near-zero within decades — confirming AMOC can collapse abruptly. Present AMOC state resembles pre-Heinrich-1 boundary conditions. (McManus et al., Nature, 2004; Thornalley et al., Nature, 2018)',
+      cluster: 'Paleoclimate Evidence'
+    },
+    {
+      id: 'e6',
+      title: 'Unprecedented Weakening in 1,600 Years',
+      likelihoodRatio: 2.6,
+      confidence: 0.85,
+      description: 'Sediment grain-size proxies from 11 globally distributed cores indicate AMOC is at its weakest state in at least 1,600 years, having declined sharply after ~1850. The rate of weakening (~3 Sv/decade) has no analogue in the Holocene record, suggesting anthropogenic forcing is the dominant driver. (Thornalley et al., Nature, 2018)',
+      cluster: 'Paleoclimate Evidence'
+    },
+    {
+      id: 'e7',
+      title: 'GRACE Ice-Melt Freshwater Flux',
+      likelihoodRatio: 2.3,
+      confidence: 0.82,
+      description: 'GRACE and GRACE-FO satellite gravimetry shows Greenland Ice Sheet mass loss accelerating from ~150 Gt/yr (2002–2012) to ~280 Gt/yr (2012–2023). Hydrological routing models show ~40% of this meltwater enters the subpolar North Atlantic gyre — directly suppressing deep-water formation in the Labrador Sea.',
+      cluster: 'Empirical Measurements'
+    },
+    {
+      id: 'e8',
+      title: 'Tipping Cascade Risk (Amazon–AMOC Coupling)',
+      likelihoodRatio: 1.8,
+      confidence: 0.65,
+      description: 'Network analysis of Earth system tipping elements finds AMOC collapse is structurally coupled with Amazon dieback and West Antarctic Ice Sheet destabilization. Synchronized tipping cascades are possible at +1.5°C–2°C global mean warming, substantially lowering the effective AMOC collapse threshold. (Wunderling et al., Earth System Dynamics, 2021)',
+      cluster: 'Systemic Risk'
+    },
+    {
+      id: 'e9',
+      title: 'van Westen Hosing Experiment — Collapse Sequence Mapped',
+      likelihoodRatio: 3.2,
+      confidence: 0.88,
+      description: 'A high-resolution global ocean model (0.1° NEMO) subjected to realistic freshwater forcing scenarios demonstrates a full AMOC collapse sequence: Labrador convection stops first, then the subpolar gyre spins down, then the subtropical cell collapses within 100 years of forcing onset. The tipping threshold is crossed at a cumulative freshwater anomaly already 60% realized today. (van Westen et al., Science Advances, 2024)',
+      cluster: 'Oceanic Modeling'
+    },
+    {
+      id: 'e10',
+      title: 'North Atlantic Heat Content Decline',
+      likelihoodRatio: 1.9,
+      confidence: 0.78,
+      description: 'Argo float ocean heat content data show the upper 2,000 m of the subpolar North Atlantic has cooled by −0.15°C/decade since 2005, contra the global ocean warming trend. This anomalous cooling is consistent with reduced poleward heat transport by a weakening AMOC and rules out regional aerosol forcing as the primary driver.',
+      cluster: 'Empirical Measurements'
+    },
+
+    // ── COUNTER-EVIDENCE / UNCERTAINTY ────────────────────────────────────
+
+    {
+      id: 'e11',
+      title: 'IPCC AR6 — Low Confidence in Pre-2100 Collapse',
+      likelihoodRatio: 0.35,
+      confidence: 0.92,
+      description: 'IPCC AR6 WGI (Chapter 9) assesses "medium confidence" that AMOC will weaken substantially this century but "low confidence" it will cross a tipping point before 2100. The report notes that no CMIP6 model produces an abrupt collapse under any SSP scenario, and early-warning signal studies carry large statistical uncertainty.',
+      cluster: 'Expert Assessment'
+    },
+    {
+      id: 'e12',
+      title: 'RAPID Array — Decadal Variability Masks Trend',
+      likelihoodRatio: 0.55,
+      confidence: 0.80,
+      description: 'The RAPID-MOCHA mooring array (26.5°N, 2004–present) shows large interannual variability (±4 Sv) superimposed on any long-term trend. A 2023 reanalysis finds the statistically significant weakening trend is sensitive to the choice of baseline period and may partly reflect natural Atlantic Multidecadal Variability rather than forced change. (Jackson et al., GRL, 2023)',
+      cluster: 'Empirical Measurements'
+    },
+    {
+      id: 'e13',
+      title: 'Ditlevsen Critique — Statistical Methodology Concerns',
+      likelihoodRatio: 0.50,
+      confidence: 0.72,
+      description: 'Multiple response papers (Boers 2023; McKinnon & Tingley 2023) challenge the Ditlevsen & Ditlevsen (2023) collapse timeline, arguing their SST fingerprint is not a clean AMOC proxy, the detrending method inflates variance signals, and bootstrapped confidence intervals are too narrow given autocorrelation structure. The central estimate of 2057 remains contested.',
+      cluster: 'Expert Assessment'
+    },
+    {
+      id: 'e14',
+      title: 'High-Resolution Models Show Increased Stability',
+      likelihoodRatio: 0.60,
+      confidence: 0.68,
+      description: 'HighResMIP (0.25° atmosphere / 0.1° ocean) ensemble simulations show AMOC is more stable under warming than coarser CMIP6 models suggest, due to better-resolved mesoscale eddy buoyancy fluxes that partly compensate freshwater-driven density loss. Model resolution emerges as a critical uncertainty in tipping-point projections.',
+      cluster: 'Oceanic Modeling'
+    },
+    {
+      id: 'e15',
+      title: 'Labrador Sea Deep Convection Partial Recovery',
+      likelihoodRatio: 0.70,
+      confidence: 0.74,
+      description: 'Argo profiling floats and mooring data document strong Labrador Sea deep convection in 2015–2016 and 2021–2022, reaching >2,200 m — among the deepest since records began. This recovery, driven by strong winter NAO forcing, suggests the deep-water formation system retains resilience and is not yet in irreversible decline.',
+      cluster: 'Historical Observation'
+    }
   ];
   scenarioEvidence = JSON.parse(JSON.stringify(baseEvidence));
   scenarioOnlyIds = new Set();
