@@ -1986,7 +1986,7 @@ function updateAll() {
 function attachCardListeners(container, isScenario) {
   const target = isScenario ? scenarioEvidence : baseEvidence;
 
-  container.querySelectorAll('.ev-title-input').forEach(inp => inp.addEventListener('input', e => {
+  container.querySelectorAll('.ev-title-input').forEach(inp => inp.addEventListener('change', e => {
     const ev = target.find(x => x.id === e.target.dataset.id);
     if (ev) { ev.title = e.target.value; updateAll(); }
   }));
@@ -1996,7 +1996,7 @@ function attachCardListeners(container, isScenario) {
     if (ev) { ev.cluster = e.target.value || 'General'; updateAll(); }
   }));
 
-  container.querySelectorAll('.ev-lr-input').forEach(inp => inp.addEventListener('input', e => {
+container.querySelectorAll('.ev-lr-input').forEach(inp => inp.addEventListener('change', e => {
     const val = parseFloat(e.target.value);
     const ev = target.find(x => x.id === e.target.dataset.id);
     if (ev && val > 0 && isFinite(val)) { ev.likelihoodRatio = val; updateAll(); }
@@ -2026,7 +2026,7 @@ function attachCardListeners(container, isScenario) {
     }
   }));
 
-  container.querySelectorAll('.ev-desc-input').forEach(inp => inp.addEventListener('input', e => {
+container.querySelectorAll('.ev-desc-input').forEach(inp => inp.addEventListener('change', e => {
     const ev = target.find(x => x.id === e.target.dataset.id);
     if (ev) ev.description = e.target.value;
     saveToLocalStorage();
@@ -2698,12 +2698,18 @@ function exportXML() {
 }
 
 // ─── EVENT LISTENERS ─────────────────────────────────────────────────────────
-document.getElementById('hypothesisTitle').addEventListener('input', e => { hypothesis.title = e.target.value; updateAll(); });
-document.getElementById('hypothesisDesc').addEventListener('input', e => { hypothesis.description = e.target.value; updateAll(); });
-document.getElementById('prior').addEventListener('input', e => { hypothesis.prior = parseFloat(e.target.value); updateAll(); });
-document.getElementById('threshold').addEventListener('input', e => { threshold = parseFloat(e.target.value) || 0.7; updateAll(); });
-document.getElementById('projectTitle').addEventListener('input', e => { project.title = e.target.value; updateAll(); });
-document.getElementById('projectAuthor').addEventListener('input', e => { project.author = e.target.value; updateAll(); });
+// UBAH baris-baris ini:
+document.getElementById('hypothesisTitle').addEventListener('change', e => { hypothesis.title = e.target.value; updateAll(); });
+document.getElementById('hypothesisDesc').addEventListener('change', e => { hypothesis.description = e.target.value; updateAll(); });
+
+// Biarkan 'prior' tetap 'input' agar pergerakan slidernya mulus secara real-time
+document.getElementById('prior').addEventListener('input', e => { hypothesis.prior = parseFloat(e.target.value); updateAll(); }); 
+
+// Ubah 'threshold' menjadi 'change' agar saat mengetik angka desimal kursor tidak ter-reset
+document.getElementById('threshold').addEventListener('change', e => { threshold = parseFloat(e.target.value) || 0.7; updateAll(); }); 
+
+document.getElementById('projectTitle').addEventListener('change', e => { project.title = e.target.value; updateAll(); });
+document.getElementById('projectAuthor').addEventListener('change', e => { project.author = e.target.value; updateAll(); });
 
 document.getElementById('addEvidence').addEventListener('click', () => {
   const newId = 'ev_' + Date.now() + '_' + Math.random().toString(36).substr(2,4);
